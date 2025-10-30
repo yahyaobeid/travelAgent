@@ -1,10 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>{% block title %}Travel Agent{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
-</head>
+    <head>
+        <meta charset="utf-8">
+        <title>{% block title %}Travel Agent{% endblock %}</title>
+        <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+        <style>
+            nav {
+                display: flex;
+                gap: 1rem;
+                align-items: center;
+            }
+            .logout-form {
+                display: inline;
+            }
+            .logout-form button {
+                background: none;
+                border: none;
+                color: inherit;
+                padding: 0;
+                font: inherit;
+                cursor: pointer;
+                text-decoration: underline;
+            }
+        </style>
+    </head>
 <body>
     <header>
         <h1><a href="{% url 'core:home' %}">Travel Agent</a></h1>
@@ -12,7 +31,10 @@
             {% if user.is_authenticated %}
                 <a href="{% url 'core:home' %}">Dashboard</a>
                 <a href="{% url 'core:itinerary_new' %}">Plan Trip</a>
-                <a href="{% url 'users:logout' %}">Logout</a>
+                <form method="post" action="{% url 'users:logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit">Logout</button>
+                </form>
             {% else %}
                 <a href="{% url 'users:login' %}">Login</a>
                 <a href="{% url 'users:register' %}">Register</a>
