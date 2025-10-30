@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}New Itinerary · Travel Agent{% endblock %}
+
+{% block content %}
+<section>
+    <h2>Plan a new itinerary</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="errorlist">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% for field in form %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+                <small>{{ field.help_text }}</small>
+            {% endif %}
+            {{ field.errors }}
+        {% endfor %}
+        <button type="submit">Generate itinerary</button>
+        <a href="{% url 'core:home' %}">Cancel</a>
+    </form>
+</section>
+{% endblock %}

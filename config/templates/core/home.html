@@ -4,9 +4,27 @@
 
 {% block content %}
 <section>
-    <h2>
-        Welcome{% if user.first_name %} {{ user.first_name }}{% endif %}
-    </h2>
-    <p>You're ready to start building travel itineraries. New features will appear here soon.</p>
+    <h2>Welcome back{% if user.first_name %} {{ user.first_name }}{% endif %}</h2>
+    <p>Ready for your next trip?</p>
+    <p><a href="{% url 'core:itinerary_new' %}" class="button">Plan a new itinerary</a></p>
+</section>
+
+<section>
+    <h3>Your itineraries</h3>
+    {% if itineraries %}
+        <ul>
+            {% for itinerary in itineraries %}
+                <li>
+                    <a href="{% url 'core:itinerary_detail' itinerary.pk %}">
+                        {{ itinerary.destination }} ({{ itinerary.start_date }} → {{ itinerary.end_date }})
+                    </a>
+                    <br>
+                    <small>Generated {{ itinerary.created_at|date:"M d, Y H:i" }}</small>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No itineraries yet. Let's create your first one.</p>
+    {% endif %}
 </section>
 {% endblock %}
