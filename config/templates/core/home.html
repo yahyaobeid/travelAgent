@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard · Travel Agent{% endblock %}
+
+{% block content %}
+<section>
+    <h2>
+        Welcome{% if user.first_name %} {{ user.first_name }}{% endif %}
+    </h2>
+    <p>You're ready to start building travel itineraries. New features will appear here soon.</p>
+</section>
+{% endblock %}

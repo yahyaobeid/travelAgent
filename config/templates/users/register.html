@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Register · Travel Agent{% endblock %}
+
+{% block content %}
+<section>
+    <h2>Create your account</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+                <small>{{ field.help_text }}</small>
+            {% endif %}
+            {{ field.errors }}
+        {% endfor %}
+        <button type="submit">Register</button>
+    </form>
+    <p>Already registered? <a href="{% url 'users:login' %}">Sign in</a>.</p>
+</section>
+{% endblock %}

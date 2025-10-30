@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Login · Travel Agent{% endblock %}
+
+{% block content %}
+<section>
+    <h2>Login</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="errorlist">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% for field in form %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+                <small>{{ field.help_text }}</small>
+            {% endif %}
+            {{ field.errors }}
+        {% endfor %}
+        {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
+        <button type="submit">Sign in</button>
+    </form>
+    <p>New here? <a href="{% url 'users:register' %}">Create an account</a>.</p>
+</section>
+{% endblock %}
