@@ -36,7 +36,7 @@ a:hover {
 }
 
 header {
-    background: linear-gradient(135deg, rgba(67, 97, 238, 0.9), rgba(247, 37, 133, 0.9));
+    background: linear-gradient(199deg, rgb(88 113 229 / 90%), rgb(67 255 221 / 90%));
     color: white;
     padding: 1.5rem 2rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -171,7 +171,8 @@ main {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--sunset), var(--ocean));
+    background: linear-gradient(
+        353deg, rgb(88 113 229 / 90%), rgb(67 255 221 / 90%));
     color: white;
     padding: 0.85rem 1.75rem;
     border-radius: 999px;
@@ -289,7 +290,7 @@ small {
 
 button[type="submit"],
 .form-actions .button {
-    background: linear-gradient(135deg, var(--ocean), var(--sky));
+    background: linear-gradient(246deg, var(--ocean), var(--sky));
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -301,6 +302,7 @@ button[type="submit"],
 
 button[type="submit"]:hover,
 .form-actions .button:hover {
+    background: linear-gradient(246deg, var(--ocean), var(--sky));
     transform: translateY(-2px);
     box-shadow: 0 10px 18px -15px rgba(67, 97, 238, 0.9);
 }
