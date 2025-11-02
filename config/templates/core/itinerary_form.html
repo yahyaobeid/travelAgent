@@ -5,8 +5,13 @@
 {% block content %}
 <section class="hero">
     <div>
-        <h2>Tell us about your trip</h2>
-        <p>Share your destination, dates, and interests—we’ll craft a personalised itinerary with activities, dining, and hidden gems.</p>
+        {% if is_edit %}
+            <h2>Update your getaway</h2>
+            <p>Adjust the essentials or fine-tune the AI plan below. Regenerate the trip to get fresh recommendations.</p>
+        {% else %}
+            <h2>Tell us about your trip</h2>
+            <p>Share your destination, dates, and interests—we’ll craft a personalised itinerary with activities, dining, and hidden gems.</p>
+        {% endif %}
     </div>
     <div>
         <p><strong>Need ideas?</strong></p>
@@ -19,7 +24,7 @@
     </div>
 </section>
 
-<form method="post">
+<form method="post" id="itinerary-form">
     {% csrf_token %}
     {% if form.non_field_errors %}
         <div class="errorlist">{{ form.non_field_errors }}</div>
@@ -35,8 +40,39 @@
         </div>
     {% endfor %}
     <div class="form-actions">
-        <button type="submit">Generate itinerary</button>
-        <a href="{% url 'core:home' %}">Cancel</a>
+        {% if is_edit %}
+            <button type="submit">Save changes</button>
+            <a href="{% url 'core:itinerary_detail' itinerary.pk %}">Back to itinerary</a>
+        {% else %}
+            <button type="submit">Generate itinerary</button>
+            <a href="{% url 'core:home' %}">Cancel</a>
+        {% endif %}
     </div>
 </form>
+
+<div id="loading-overlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-box">
+        <h3>Planning your journey...</h3>
+        <div class="progress-track" aria-hidden="true">
+            <div class="progress-plane">
+                <span class="plane-icon" aria-hidden="true">✈️</span>
+            </div>
+        </div>
+        <p>We’re asking our travel expert to map out the perfect itinerary.</p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.querySelector("#itinerary-form");
+        const overlay = document.getElementById("loading-overlay");
+        if (!form || !overlay) {
+            return;
+        }
+        form.addEventListener("submit", function () {
+            overlay.classList.add("active");
+            overlay.setAttribute("aria-hidden", "false");
+        });
+    });
+</script>
 {% endblock %}

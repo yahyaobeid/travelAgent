@@ -7,6 +7,18 @@ from .utils import render_markdown
 class Itinerary(models.Model):
     """Stores generated itineraries for a user."""
 
+    STYLE_GENERAL = "general"
+    STYLE_CULTURE = "culture_history"
+    STYLE_CITY = "city_shopping"
+    STYLE_ADVENTURE = "adventure"
+
+    STYLE_CHOICES = [
+        (STYLE_GENERAL, "No preference / Balanced"),
+        (STYLE_CULTURE, "Culture & History"),
+        (STYLE_CITY, "City Life & Shopping"),
+        (STYLE_ADVENTURE, "Adventure & Outdoors"),
+    ]
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -16,6 +28,12 @@ class Itinerary(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     interests = models.TextField(blank=True)
+    preference = models.CharField(
+        max_length=32,
+        choices=STYLE_CHOICES,
+        default=STYLE_GENERAL,
+        help_text="Overall tone for the generated itinerary.",
+    )
     prompt = models.TextField()
     generated_plan = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

@@ -30,12 +30,17 @@
                     <div class="trip-meta">
                         <span class="trip-dates">{{ itinerary.start_date|date:"M d, Y" }} → {{ itinerary.end_date|date:"M d, Y" }}</span>
                         <span>Created {{ itinerary.created_at|date:"M d, Y H:i" }}</span>
+                        <span>Style: {{ itinerary.get_preference_display }}</span>
                         {% if itinerary.interests %}
                             <span>Focus: {{ itinerary.interests|truncatechars:50 }}</span>
                         {% endif %}
                     </div>
                     <p>{{ itinerary.rendered_plan|striptags|truncatewords:40 }}</p>
-                    <a href="{% url 'core:itinerary_detail' itinerary.pk %}">See full itinerary →</a>
+                    <div class="card-actions">
+                        <a href="{% url 'core:itinerary_detail' itinerary.pk %}">View details</a>
+                        <a href="{% url 'core:itinerary_edit' itinerary.pk %}">Edit</a>
+                        <a class="danger-link" href="{% url 'core:itinerary_delete' itinerary.pk %}">Delete</a>
+                    </div>
                 </article>
             {% endfor %}
         </div>

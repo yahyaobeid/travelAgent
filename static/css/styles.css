@@ -219,6 +219,21 @@ main {
     color: var(--muted);
 }
 
+.card-actions {
+    display: flex;
+    gap: 1.25rem;
+    margin-top: 1rem;
+    font-weight: 600;
+}
+
+.danger-link {
+    color: #d62828;
+}
+
+.danger-link:hover {
+    color: #b41f1f;
+}
+
 .trip-dates {
     font-weight: 600;
     color: var(--ocean);
@@ -298,6 +313,79 @@ button[type="submit"]:hover,
 
 .form-actions a {
     color: var(--muted);
+}
+
+.form-actions .danger {
+    background: linear-gradient(135deg, #d62828, #b21f1f);
+    color: #fff;
+}
+
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 19, 43, 0.35);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1.5rem;
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.loading-box {
+    background: var(--card-bg);
+    padding: 2rem 2.5rem;
+    border-radius: 18px;
+    box-shadow: 0 24px 60px -30px rgba(11, 19, 43, 0.45);
+    text-align: center;
+    max-width: 360px;
+}
+
+.loading-box p {
+    margin: 0.5rem 0 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.progress-track {
+    position: relative;
+    width: 240px;
+    margin: 1.5rem auto;
+    height: 4px;
+    background: rgba(67, 97, 238, 0.15);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-plane {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    display: flex;
+    justify-content: center;
+    animation: plane-travel 1.8s ease-in-out infinite;
+}
+
+.plane-icon {
+    font-size: 1.5rem;
+    text-shadow: 0 6px 18px rgba(67, 97, 238, 0.45);
+}
+
+@keyframes plane-travel {
+    0% {
+        left: -16px;
+    }
+    50% {
+        left: calc(100% - 16px);
+    }
+    100% {
+        left: -16px;
+    }
 }
 
 .auth-cta {
