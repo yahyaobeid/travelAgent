@@ -3,23 +3,40 @@
 {% block title %}New Itinerary · Travel Agent{% endblock %}
 
 {% block content %}
-<section>
-    <h2>Plan a new itinerary</h2>
-    <form method="post">
-        {% csrf_token %}
-        {% if form.non_field_errors %}
-            <div class="errorlist">{{ form.non_field_errors }}</div>
-        {% endif %}
-        {% for field in form %}
+<section class="hero">
+    <div>
+        <h2>Tell us about your trip</h2>
+        <p>Share your destination, dates, and interests—we’ll craft a personalised itinerary with activities, dining, and hidden gems.</p>
+    </div>
+    <div>
+        <p><strong>Need ideas?</strong></p>
+        <ul>
+            <li>Romantic beach retreats</li>
+            <li>Cultural food tours</li>
+            <li>Outdoor adventures</li>
+            <li>Solo city explorations</li>
+        </ul>
+    </div>
+</section>
+
+<form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="errorlist">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% for field in form %}
+        <div>
             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
             {{ field }}
             {% if field.help_text %}
                 <small>{{ field.help_text }}</small>
             {% endif %}
             {{ field.errors }}
-        {% endfor %}
+        </div>
+    {% endfor %}
+    <div class="form-actions">
         <button type="submit">Generate itinerary</button>
         <a href="{% url 'core:home' %}">Cancel</a>
-    </form>
-</section>
+    </div>
+</form>
 {% endblock %}

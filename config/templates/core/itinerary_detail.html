@@ -3,23 +3,28 @@
 {% block title %}{{ itinerary.destination }} · Travel Agent{% endblock %}
 
 {% block content %}
-<article>
-    <h2>{{ itinerary.destination }}</h2>
-    <p><strong>Dates:</strong> {{ itinerary.start_date }} → {{ itinerary.end_date }}</p>
-    {% if itinerary.interests %}
-        <p><strong>Interests:</strong> {{ itinerary.interests }}</p>
-    {% endif %}
+<section class="hero">
+    <div>
+        <h2>{{ itinerary.destination }}</h2>
+        <p class="trip-dates">{{ itinerary.start_date|date:"M d, Y" }} → {{ itinerary.end_date|date:"M d, Y" }}</p>
+        {% if itinerary.interests %}
+            <p><strong>Focus:</strong> {{ itinerary.interests }}</p>
+        {% endif %}
+    </div>
+    <div>
+        <p><strong>Next steps</strong></p>
+        <ul>
+            <li><a href="{% url 'core:itinerary_new' %}">Plan another adventure</a></li>
+            <li><a href="{% url 'core:home' %}">Return to dashboard</a></li>
+            <li>Share with your travel companions</li>
+        </ul>
+    </div>
+</section>
 
-    <section>
-        <h3>Itinerary</h3>
-        <div class="itinerary-content">
-            {{ itinerary.rendered_plan|safe }}
-        </div>
-    </section>
-
-    <p>
-        <a href="{% url 'core:itinerary_new' %}">Create another itinerary</a> ·
-        <a href="{% url 'core:home' %}">Back to dashboard</a>
-    </p>
-</article>
+<section>
+    <h3 class="section-title">Your curated plan</h3>
+    <div class="itinerary-content">
+        {{ itinerary.rendered_plan|safe }}
+    </div>
+</section>
 {% endblock %}

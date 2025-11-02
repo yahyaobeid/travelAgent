@@ -3,26 +3,33 @@
 {% block title %}Login · Travel Agent{% endblock %}
 
 {% block content %}
-<section>
-    <h2>Login</h2>
+<div class="auth-wrapper">
+    <div class="auth-header">
+        <h2>Welcome back</h2>
+        <p>Sign in to revisit saved itineraries and craft new adventures.</p>
+    </div>
+
     <form method="post">
         {% csrf_token %}
         {% if form.non_field_errors %}
             <div class="errorlist">{{ form.non_field_errors }}</div>
         {% endif %}
         {% for field in form %}
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}
-                <small>{{ field.help_text }}</small>
-            {% endif %}
-            {{ field.errors }}
+            <div>
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                    <small>{{ field.help_text }}</small>
+                {% endif %}
+                {{ field.errors }}
+            </div>
         {% endfor %}
         {% if next %}
             <input type="hidden" name="next" value="{{ next }}">
         {% endif %}
         <button type="submit">Sign in</button>
     </form>
-    <p>New here? <a href="{% url 'users:register' %}">Create an account</a>.</p>
-</section>
+
+    <p class="auth-cta">New here? <a href="{% url 'users:register' %}">Create an account</a>.</p>
+</div>
 {% endblock %}

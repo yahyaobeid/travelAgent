@@ -3,28 +3,47 @@
 {% block title %}Dashboard · Travel Agent{% endblock %}
 
 {% block content %}
-<section>
-    <h2>Welcome back{% if user.first_name %} {{ user.first_name }}{% endif %}</h2>
-    <p>Ready for your next trip?</p>
-    <p><a href="{% url 'core:itinerary_new' %}" class="button">Plan a new itinerary</a></p>
+<section class="hero">
+    <div>
+        <h2>Hello{% if user.first_name %} {{ user.first_name }}{% endif %}! Your next adventure awaits.</h2>
+        <p>Craft custom day-by-day plans, restaurant picks, and hidden gems powered by AI travel experts.</p>
+        <a href="{% url 'core:itinerary_new' %}" class="cta-button">Start planning</a>
+    </div>
+    <div>
+        <p><strong>Trip inspiration</strong></p>
+        <ul>
+            <li>Weekend city escapes</li>
+            <li>Bucket-list tours</li>
+            <li>Family-friendly adventures</li>
+            <li>Work-from-anywhere getaways</li>
+        </ul>
+    </div>
 </section>
 
 <section>
-    <h3>Your itineraries</h3>
+    <h3 class="section-title">Your itineraries</h3>
     {% if itineraries %}
-        <ul>
+        <div class="card-grid">
             {% for itinerary in itineraries %}
-                <li>
-                    <a href="{% url 'core:itinerary_detail' itinerary.pk %}">
-                        {{ itinerary.destination }} ({{ itinerary.start_date }} → {{ itinerary.end_date }})
-                    </a>
-                    <br>
-                    <small>Generated {{ itinerary.created_at|date:"M d, Y H:i" }}</small>
-                </li>
+                <article class="card">
+                    <h4><a href="{% url 'core:itinerary_detail' itinerary.pk %}">{{ itinerary.destination }}</a></h4>
+                    <div class="trip-meta">
+                        <span class="trip-dates">{{ itinerary.start_date|date:"M d, Y" }} → {{ itinerary.end_date|date:"M d, Y" }}</span>
+                        <span>Created {{ itinerary.created_at|date:"M d, Y H:i" }}</span>
+                        {% if itinerary.interests %}
+                            <span>Focus: {{ itinerary.interests|truncatechars:50 }}</span>
+                        {% endif %}
+                    </div>
+                    <p>{{ itinerary.rendered_plan|striptags|truncatewords:40 }}</p>
+                    <a href="{% url 'core:itinerary_detail' itinerary.pk %}">See full itinerary →</a>
+                </article>
             {% endfor %}
-        </ul>
+        </div>
     {% else %}
-        <p>No itineraries yet. Let's create your first one.</p>
+        <div class="empty-state">
+            <p>No itineraries yet. Kick off your first journey with a few quick travel details.</p>
+            <p><a class="cta-button" href="{% url 'core:itinerary_new' %}">Create your first itinerary</a></p>
+        </div>
     {% endif %}
 </section>
 {% endblock %}
