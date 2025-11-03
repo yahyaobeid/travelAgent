@@ -20,10 +20,19 @@ if load_dotenv:
 SECRET_KEY = os.getenv("DJANGO_SECRET")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "true")
+DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
-ALLOWED_HOSTS = ["https://triphelix.com", "triphelix.com", "localhost", "127.0.0.1", "http://triphelix.com"]
+ALLOWED_HOSTS = [
+    "triphelix.com",
+    "www.triphelix.com",
+    "localhost",
+    "127.0.0.1",
+]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://triphelix.com",
+    "https://www.triphelix.com",
+]
 
 # Application definition
 
@@ -116,7 +125,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR.parent / "static"]
-STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 if not DEBUG:
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
