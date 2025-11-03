@@ -74,6 +74,22 @@ header {
     margin: 0;
 }
 
+.nav-pill {
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.coming-soon::after {
+    content: " · Coming soon";
+    font-weight: 400;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
 .nav-links a,
 .nav-links button {
     color: white;
