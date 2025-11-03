@@ -20,9 +20,9 @@ if load_dotenv:
 SECRET_KEY = os.getenv("DJANGO_SECRET")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["https://triphelix.com", "triphelix.com", "localhost", "127.0.0.1", "http://triphelix.com"]
 
 
 # Application definition
@@ -116,7 +116,7 @@ USE_TZ = True
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR.parent / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / "static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
