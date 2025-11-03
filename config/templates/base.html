@@ -4,29 +4,40 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Travel Agent{% endblock %}</title>
+    <title>{% block title %}TripHelix{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
     <header>
         <div class="navbar">
             <a class="brand" href="{% url 'core:home' %}">
-                ✈️ Travel Agent
+                TripHelix
                 <span>Design your next getaway</span>
             </a>
-            <nav class="nav-links">
-                <span class="nav-pill coming-soon" title="Coming soon">Flights · Hotels · Cars</span>
-            {% if user.is_authenticated %}
-                <a href="{% url 'core:home' %}">Dashboard</a>
-                <a href="{% url 'core:itinerary_new' %}">Plan a Trip</a>
-                <form method="post" action="{% url 'users:logout' %}">
-                    {% csrf_token %}
-                    <button type="submit">Logout</button>
-                </form>
-            {% else %}
-                <a href="{% url 'users:login' %}">Sign in</a>
-                <a href="{% url 'users:register' %}">Create account</a>
-            {% endif %}
+            <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
+                <span class="nav-toggle-icon" aria-hidden="true">☰</span>
+                <span class="sr-only">Toggle navigation</span>
+            </button>
+            <nav id="primary-nav" class="nav-links">
+                <ul>
+                    <li class="nav-item coming-soon-item">
+                        <span class="coming-soon-label">Flights · Hotels · Cars</span>
+                        <span class="coming-soon-tag">Coming soon</span>
+                    </li>
+                {% if user.is_authenticated %}
+                    <li class="nav-item"><a href="{% url 'core:home' %}">Dashboard</a></li>
+                    <li class="nav-item"><a href="{% url 'core:itinerary_new' %}">Plan a Trip</a></li>
+                    <li class="nav-item">
+                        <form id="logout-form" method="post" action="{% url 'users:logout' %}">
+                            {% csrf_token %}
+                            <button id="logout-button" type="submit">Logout</button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li class="nav-item"><a href="{% url 'users:login' %}">Sign in</a></li>
+                    <li class="nav-item"><a href="{% url 'users:register' %}">Create account</a></li>
+                {% endif %}
+                </ul>
             </nav>
         </div>
     </header>
@@ -40,5 +51,61 @@
         {% endif %}
         {% block content %}{% endblock %}
     </main>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          const toggle = document.querySelector(".nav-toggle");
+          const nav = document.getElementById("primary-nav");
+          if (!toggle || !nav) return;
+      
+          const icon = toggle.querySelector(".nav-toggle-icon");
+          const mq = window.matchMedia("(min-width: 721px)");
+          const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+      
+          const setState = (expanded) => {
+            toggle.setAttribute("aria-expanded", String(expanded));
+            nav.classList.toggle("open", expanded);
+            if (icon) icon.textContent = expanded ? "✕" : "☰";
+      
+            // If reduced motion, skip the max-height animation by setting none temporarily
+            if (prefersReduced.matches) {
+              const ul = nav.querySelector("ul");
+              if (ul) {
+                ul.style.transition = "none";
+                requestAnimationFrame(() => { ul.style.transition = ""; });
+              }
+            }
+          };
+      
+          // Click + keyboard
+          const handleToggle = (e) => {
+            if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+            const expanded = toggle.getAttribute("aria-expanded") === "true";
+            setState(!expanded);
+          };
+      
+          toggle.addEventListener("click", handleToggle);
+          toggle.addEventListener("keydown", handleToggle);
+      
+          // Close on Escape (mobile only)
+          document.addEventListener("keydown", (e) => {
+            const expanded = toggle.getAttribute("aria-expanded") === "true";
+            if (!mq.matches && expanded && e.key === "Escape") setState(false);
+          });
+      
+          // Auto-open on desktop, collapsed on mobile
+          const handleResize = () => setState(mq.matches);
+          if (typeof mq.addEventListener === "function") mq.addEventListener("change", handleResize);
+          else if (typeof mq.addListener === "function") mq.addListener(handleResize);
+      
+          // Close after choosing a link on mobile
+          nav.addEventListener("click", (event) => {
+            const el = event.target.closest("a, button");
+            if (el && !mq.matches) setState(false);
+          });
+      
+          handleResize();
+        });
+      </script>
+      
 </body>
 </html>
