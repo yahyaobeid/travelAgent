@@ -10,6 +10,12 @@
         {% if interests %}
             <p><strong>Interests:</strong> {{ interests }}</p>
         {% endif %}
+        {% if activities %}
+            <p><strong>Activities wish list:</strong> {{ activities }}</p>
+        {% endif %}
+        {% if food_preferences %}
+            <p><strong>Food & drink notes:</strong> {{ food_preferences }}</p>
+        {% endif %}
         <p><strong>Travel style:</strong> {{ preference }}</p>
     </div>
     <div>
@@ -32,8 +38,33 @@
 </section>
 
 <section>
+    <h3 class="section-title">Generated itinerary</h3>
     <div class="itinerary-content">
         {{ generated_plan|safe }}
     </div>
 </section>
+
+{% if events %}
+<section>
+    <h3 class="section-title">Local events</h3>
+    <div class="card-grid">
+        {% for event in events %}
+            <article class="card">
+                <h4><a href="{{ event.url }}" target="_blank" rel="noopener">{{ event.name }}</a></h4>
+                <p class="event-location">
+                    {{ event.requested_city|default:event.city }}
+                    {% if event.state %}, {{ event.state }}{% endif %}
+                    {% if event.country %} ({{ event.country }}){% endif %}
+                </p>
+                {% if event.start %}
+                    <p class="trip-dates">{{ event.start|date:"M d, Y H:i" }}</p>
+                {% endif %}
+                {% if event.description %}
+                    <p>{{ event.description }}</p>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
 {% endblock %}

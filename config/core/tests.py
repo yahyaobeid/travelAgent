@@ -17,6 +17,8 @@ class ItineraryEditViewTests(TestCase):
             start_date="2025-06-01",
             end_date="2025-06-05",
             interests="Museums and food",
+            activities="Louvre deep dive, wine tasting",
+            food_preferences="Vegetarian-friendly French cuisine",
             preference=Itinerary.STYLE_GENERAL,
             prompt="Original prompt",
             generated_plan="Day 1: Louvre\nDay 2: Eiffel Tower",
@@ -42,6 +44,8 @@ class ItineraryEditViewTests(TestCase):
                 "start_date": "2025-06-02",
                 "end_date": "2025-06-06",
                 "interests": "Museums, food, and Seine cruise",
+                "activities": "River cruise, cooking class",
+                "food_preferences": "Gluten-free bistros",
                 "preference": Itinerary.STYLE_CITY,
                 "generated_plan": "Updated plan content",
             },
@@ -63,6 +67,8 @@ class ItineraryEditViewTests(TestCase):
                 "start_date": "2025-07-01",
                 "end_date": "2025-07-05",
                 "interests": "History and food",
+                "activities": "Colosseum night tour",
+                "food_preferences": "Pasta, espresso, dairy-free",
                 "preference": Itinerary.STYLE_CULTURE,
                 "generated_plan": "Doesn't matter",
                 "regenerate_plan": "on",
@@ -88,13 +94,30 @@ class ItineraryCreateViewTests(TestCase):
             "start_date": "2025-09-01",
             "end_date": "2025-09-05",
             "interests": "Food",
+            "activities": "Temple walks, tea ceremonies",
+            "food_preferences": "Matcha desserts, sake tasting",
             "preference": Itinerary.STYLE_GENERAL,
         }
         data.update(overrides)
         return data
 
+    @patch(
+        "core.views.fetch_events",
+        return_value=[
+            {
+                "name": "Art Expo",
+                "url": "http://event",
+                "start": "2025-09-02T10:00:00",
+                "city": "Kyoto",
+                "state": "",
+                "country": "JP",
+                "requested_city": "Kyoto",
+                "description": "Pop-up art showcase.",
+            }
+        ],
+    )
     @patch("core.views.generate_itinerary", return_value=("Prompt", "Plan body"))
-    def test_preview_available_without_login(self, mock_generate):
+    def test_preview_available_without_login(self, mock_generate, mock_events):
         response = self.client.post(
             self.url,
             {**self._valid_payload(), "action": "preview"},
@@ -102,10 +125,13 @@ class ItineraryCreateViewTests(TestCase):
         self.assertRedirects(response, reverse("core:itinerary_preview"))
         response = self.client.get(response.url)
         self.assertContains(response, "Kyoto")
+        self.assertContains(response, "Art Expo")
         mock_generate.assert_called_once()
+        mock_events.assert_called_once()
 
+    @patch("core.views.fetch_events", return_value=[])
     @patch("core.views.generate_itinerary")
-    def test_save_requires_login(self, mock_generate):
+    def test_save_requires_login(self, mock_generate, mock_events):
         response = self.client.post(
             self.url,
             {**self._valid_payload(), "action": "save"},
@@ -113,9 +139,11 @@ class ItineraryCreateViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Please sign in to save itineraries to your account.")
         mock_generate.assert_not_called()
+        mock_events.assert_not_called()
 
+    @patch("core.views.fetch_events", return_value=[])
     @patch("core.views.generate_itinerary", return_value=("Prompt", "Saved plan"))
-    def test_save_persists_for_authenticated_user(self, mock_generate):
+    def test_save_persists_for_authenticated_user(self, mock_generate, mock_events):
         self.client.login(username="creator", password="StrongPass123!")
         response = self.client.post(
             self.url,
@@ -125,17 +153,35 @@ class ItineraryCreateViewTests(TestCase):
         self.assertRedirects(response, reverse("core:itinerary_detail", args=[itinerary.pk]))
         self.assertEqual(itinerary.generated_plan, "Saved plan")
         mock_generate.assert_called_once()
+        mock_events.assert_called_once()
 
+    @patch(
+        "core.views.fetch_events",
+        return_value=[
+            {
+                "name": "Expo",
+                "url": "http://expo",
+                "start": "2025-09-03T12:00:00",
+                "city": "Kyoto",
+                "state": "",
+                "country": "JP",
+                "requested_city": "Kyoto",
+                "description": "Design expo.",
+            }
+        ],
+    )
     @patch("core.views.generate_itinerary", return_value=("Prompt", "Plan preview"))
-    def test_preview_then_save_after_login(self, mock_generate):
+    def test_preview_then_save_after_login(self, mock_generate, mock_events):
         # Preview as anonymous
         self.client.post(self.url, {**self._valid_payload(), "action": "preview"})
+        mock_events.reset_mock()
         # Login and save pending
         self.client.login(username="creator", password="StrongPass123!")
         response = self.client.post(reverse("core:itinerary_save_pending"))
         itinerary = Itinerary.objects.get(user=self.user)
         self.assertRedirects(response, reverse("core:itinerary_detail", args=[itinerary.pk]))
         self.assertEqual(itinerary.generated_plan, "Plan preview")
+        mock_events.assert_called_once()
 
 
 class ItineraryDeleteViewTests(TestCase):
@@ -147,6 +193,8 @@ class ItineraryDeleteViewTests(TestCase):
             start_date="2025-08-10",
             end_date="2025-08-15",
             interests="Food and culture",
+            activities="Tram rides, fado evenings",
+            food_preferences="Seafood, pastel de nata",
             preference=Itinerary.STYLE_GENERAL,
             prompt="Prompt",
             generated_plan="Plan",

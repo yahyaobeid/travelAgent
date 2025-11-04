@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from django.contrib import messages
@@ -5,12 +6,15 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import get_object_or_404, redirect, render
 
+from .eventbrite import fetch_events
 from .forms import ItineraryForm, ItineraryUpdateForm
 from .models import Itinerary
 from .services import ItineraryGenerationError, ItineraryRequest, generate_itinerary
 from .utils import render_markdown
 
 PENDING_SESSION_KEY = "pending_itinerary"
+
+LOGGER = logging.getLogger(__name__)
 
 
 def home(request):
@@ -23,7 +27,12 @@ def home(request):
 def itinerary_detail(request, pk: int):
     """Display a generated itinerary."""
     itinerary = get_object_or_404(Itinerary, pk=pk, user=request.user)
-    return render(request, "core/itinerary_detail.html", {"itinerary": itinerary})
+    events = fetch_events(
+        itinerary.destination,
+        itinerary.start_date.strftime("%Y-%m-%d"),
+        itinerary.end_date.strftime("%Y-%m-%d"),
+    )
+    return render(request, "core/itinerary_detail.html", {"itinerary": itinerary, "events": events})
 
 
 def create_itinerary(request):
@@ -36,11 +45,27 @@ def create_itinerary(request):
             form.add_error(None, "Please sign in to save itineraries to your account.")
         elif form.is_valid():
             itinerary = form.save(commit=False)
+            LOGGER.info(
+                "Create itinerary form submission by %s: %s",
+                request.user if request.user.is_authenticated else "anonymous",
+                {
+                    "destination": itinerary.destination,
+                    "start_date": itinerary.start_date,
+                    "end_date": itinerary.end_date,
+                    "interests": itinerary.interests,
+                    "activities": itinerary.activities,
+                    "food_preferences": itinerary.food_preferences,
+                    "preference": itinerary.preference,
+                    "action": action,
+                },
+            )
             payload = ItineraryRequest(
                 destination=itinerary.destination,
                 start_date=itinerary.start_date.strftime("%Y-%m-%d"),
                 end_date=itinerary.end_date.strftime("%Y-%m-%d"),
                 interests=itinerary.interests,
+                activities=itinerary.activities,
+                food_preferences=itinerary.food_preferences,
                 preference=itinerary.preference,
             )
             try:
@@ -48,7 +73,9 @@ def create_itinerary(request):
             except (ImproperlyConfigured, ItineraryGenerationError) as exc:
                 form.add_error(None, str(exc))
             else:
-                if action == "save" and request.user.is_authenticated:
+                should_save = action == "save" or (request.user.is_authenticated and action == "preview")
+
+                if should_save and request.user.is_authenticated:
                     itinerary.user = request.user
                     itinerary.prompt = prompt
                     itinerary.generated_plan = plan
@@ -56,14 +83,26 @@ def create_itinerary(request):
                     messages.success(request, "Itinerary created successfully.")
                     return redirect("core:itinerary_detail", pk=itinerary.pk)
 
+                events = fetch_events(
+                    itinerary.destination,
+                    itinerary.start_date.strftime("%Y-%m-%d"),
+                    itinerary.end_date.strftime("%Y-%m-%d"),
+                )
+                if request.user.is_authenticated and should_save:
+                    itinerary.events_cache = events  # temporary attribute for template use
+                    return redirect("core:itinerary_detail", pk=itinerary.pk)
+
                 request.session[PENDING_SESSION_KEY] = {
                     "destination": itinerary.destination,
                     "start_date": itinerary.start_date.strftime("%Y-%m-%d"),
                     "end_date": itinerary.end_date.strftime("%Y-%m-%d"),
                     "interests": itinerary.interests,
+                    "activities": itinerary.activities,
+                    "food_preferences": itinerary.food_preferences,
                     "preference": itinerary.preference,
                     "prompt": prompt,
                     "generated_plan": plan,
+                    "events": events,
                 }
                 return redirect("core:itinerary_preview")
     else:
@@ -82,12 +121,29 @@ def edit_itinerary(request, pk: int):
         if form.is_valid():
             regenerate = form.cleaned_data.get("regenerate_plan", False)
             updated_itinerary = form.save(commit=False)
+            LOGGER.info(
+                "Edit itinerary submission by %s (itinerary %s): %s",
+                request.user,
+                itinerary.pk,
+                {
+                    "destination": updated_itinerary.destination,
+                    "start_date": updated_itinerary.start_date,
+                    "end_date": updated_itinerary.end_date,
+                    "interests": updated_itinerary.interests,
+                    "activities": updated_itinerary.activities,
+                    "food_preferences": updated_itinerary.food_preferences,
+                    "preference": updated_itinerary.preference,
+                    "regenerate_plan": regenerate,
+                },
+            )
             if regenerate:
                 payload = ItineraryRequest(
                     destination=updated_itinerary.destination,
                     start_date=updated_itinerary.start_date.strftime("%Y-%m-%d"),
                     end_date=updated_itinerary.end_date.strftime("%Y-%m-%d"),
                     interests=updated_itinerary.interests,
+                    activities=updated_itinerary.activities,
+                    food_preferences=updated_itinerary.food_preferences,
                     preference=updated_itinerary.preference,
                 )
                 try:
@@ -144,9 +200,13 @@ def preview_itinerary(request):
         "start_date": date.fromisoformat(pending["start_date"]),
         "end_date": date.fromisoformat(pending["end_date"]),
         "interests": pending.get("interests"),
+        "activities": pending.get("activities"),
+        "food_preferences": pending.get("food_preferences"),
         "preference": dict(Itinerary.STYLE_CHOICES).get(pending.get("preference"), "Balanced"),
         "generated_plan": render_markdown(pending["generated_plan"]),
+        "events": pending.get("events", []),
     }
+    LOGGER.info("Preview itinerary context for %s: %s", request.user if request.user.is_authenticated else "anonymous", context)
     return render(request, "core/itinerary_preview.html", context)
 
 
@@ -164,10 +224,13 @@ def save_pending_itinerary(request):
         start_date=date.fromisoformat(pending["start_date"]),
         end_date=date.fromisoformat(pending["end_date"]),
         interests=pending.get("interests", ""),
+        activities=pending.get("activities", ""),
+        food_preferences=pending.get("food_preferences", ""),
         preference=pending.get("preference", Itinerary.STYLE_GENERAL),
         prompt=pending["prompt"],
         generated_plan=pending["generated_plan"],
     )
+    LOGGER.info("Saved pending itinerary for %s: %s", request.user, itinerary.pk)
     request.session.pop(PENDING_SESSION_KEY, None)
     messages.success(request, "Itinerary saved to your trips.")
     return redirect("core:itinerary_detail", pk=itinerary.pk)

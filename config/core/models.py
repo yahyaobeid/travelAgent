@@ -24,10 +24,15 @@ class Itinerary(models.Model):
         on_delete=models.CASCADE,
         related_name="itineraries",
     )
-    destination = models.CharField(max_length=255)
+    destination = models.TextField()
     start_date = models.DateField()
     end_date = models.DateField()
     interests = models.TextField(blank=True)
+    activities = models.TextField(blank=True, help_text="Specific activities or experiences the traveler wants to prioritise.")
+    food_preferences = models.TextField(
+        blank=True,
+        help_text="Cuisine preferences, must-try drinks, and any dietary restrictions to keep in mind.",
+    )
     preference = models.CharField(
         max_length=32,
         choices=STYLE_CHOICES,

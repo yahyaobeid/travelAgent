@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
+import json
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 from .models import Itinerary
 
+
+LOGGER = logging.getLogger(__name__)
 
 GENERAL_SYSTEM_PROMPT = '''
 YOU ARE THE WORLD’S LEADING TRAVEL PLANNER AND ITINERARY DESIGNER, INTERNATIONALLY RECOGNIZED FOR YOUR ABILITY TO CRAFT PERFECTLY BALANCED TRAVEL EXPERIENCES THAT COMBINE ICONIC TOURIST DESTINATIONS WITH LOCAL HIDDEN GEMS. YOUR TASK IS TO GENERATE A DAILY ITINERARY THAT IS WELL-STRUCTURED, ENGAGING, AND EASY TO READ.
@@ -415,7 +419,9 @@ class ItineraryRequest:
     destination: str
     start_date: str
     end_date: str
-    interests: str
+    interests: str = ""
+    activities: str = ""
+    food_preferences: str = ""
     preference: str = Itinerary.STYLE_GENERAL
 
 
@@ -425,6 +431,8 @@ class ItineraryGenerationError(Exception):
 
 def _build_prompt(payload: ItineraryRequest) -> str:
     interests = payload.interests.strip() or "general sightseeing, dining, and culture"
+    activities = payload.activities.strip() or "open to a balanced mix of tours, museums, outdoor time, and downtime"
+    food_notes = payload.food_preferences.strip() or "no specific culinary requirements"
     style_descriptions = {
         Itinerary.STYLE_GENERAL: "balanced mix of iconic sights, local gems, and downtime",
         Itinerary.STYLE_CULTURE: "culture & history highlights packed with museums, architecture, and heritage encounters",
@@ -438,7 +446,9 @@ def _build_prompt(payload: ItineraryRequest) -> str:
         "recommendations, and brief rationale.\n\n"
         f"Destination: {payload.destination}\n"
         f"Dates: {payload.start_date} to {payload.end_date}\n"
-        f"Traveler interests: {interests}\n\n"
+        f"Traveler interests: {interests}\n"
+        f"Activity wish list: {activities}\n"
+        f"Food & drink notes: {food_notes}\n\n"
         f"Preferred travel style: {focus_text}\n\n"
         "Ensure suggestions are practical and ordered chronologically. "
         "Close with a short summary of the trip highlights."
@@ -468,21 +478,47 @@ def generate_itinerary(payload: ItineraryRequest) -> tuple[str, str]:
     client = OpenAI(api_key=api_key)
 
     try:
+        system_prompt = SYSTEM_PROMPTS.get(
+            payload.preference,
+            SYSTEM_PROMPTS[Itinerary.STYLE_GENERAL],
+        )
+
+        # Log full outbound payload to OpenAI
+        LOGGER.debug(
+            "OpenAI request: %s",
+            json.dumps(
+                {
+                    "model": model,
+                    "input": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt},
+                    ],
+                },
+                ensure_ascii=False,
+            ),
+        )
+
         response = client.responses.create(
             model=model,
             input=[
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPTS.get(
-                        payload.preference,
-                        SYSTEM_PROMPTS[Itinerary.STYLE_GENERAL],
-                    ),
-                },
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ],
         )
     except Exception as exc:  # broad catch to wrap OpenAI errors
         raise ItineraryGenerationError(str(exc)) from exc
+
+    # Log raw inbound response from OpenAI
+    try:
+        if hasattr(response, "model_dump"):
+            response_payload = response.model_dump()
+        elif hasattr(response, "to_dict"):
+            response_payload = response.to_dict()  # type: ignore[attr-defined]
+        else:
+            response_payload = str(response)
+        LOGGER.debug("OpenAI response: %s", json.dumps(response_payload, ensure_ascii=False))
+    except Exception:  # pragma: no cover - logging must not break flow
+        LOGGER.debug("OpenAI response (unserializable): %r", response)
 
     itinerary_text = getattr(response, "output_text", None)
     if not itinerary_text:

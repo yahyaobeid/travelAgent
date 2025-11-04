@@ -141,3 +141,45 @@ LOGIN_URL = "users:login"
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_DESTINATION_MODEL = os.getenv("OPENAI_DESTINATION_MODEL", "gpt-4o-mini")
+TICKETMASTER_API_KEY = os.getenv("TICKETMASTER_API_KEY")
+
+
+# Logging configuration to capture full outbound/inbound API I/O
+# In production (e.g., EC2 with DEBUG=false), default to ERROR-only logging unless overridden
+LOG_LEVEL = "DEBUG" if DEBUG else os.getenv("DJANGO_LOG_LEVEL", "ERROR")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "%(asctime)s %(levelname)s [%(name)s] %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            "level": LOG_LEVEL,
+        },
+        "api_file": {
+            "class": "logging.FileHandler",
+            "formatter": "verbose",
+            "level": LOG_LEVEL,
+            "filename": str(BASE_DIR / "api.log"),
+            "encoding": "utf-8",
+        },
+    },
+    "loggers": {
+        # Project apps
+        "core": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": True},
+        "core.services": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
+        "core.eventbrite": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
+
+        # Third-party HTTP clients
+        "openai": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
+        "httpx": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
+        "urllib3": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
+        "requests": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
+    },
+}
