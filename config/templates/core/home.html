@@ -20,6 +20,7 @@
     </div>
 </section>
 
+{% if user.is_authenticated %}
 <section>
     <h3 class="section-title">Your itineraries</h3>
     {% if itineraries %}
@@ -51,4 +52,14 @@
         </div>
     {% endif %}
 </section>
+{% else %}
+<section class="empty-state">
+    <h3>Create an account to save itineraries</h3>
+    <p>Preview as many trips as you like without signing in. When you're ready to keep, edit, or share them, simply create an account.</p>
+    <p>
+        <a class="cta-button" href="{% url 'users:register' %}">Create account</a>
+        or <a href="{% url 'users:login' %}">sign in</a>
+    </p>
+</section>
+{% endif %}
 {% endblock %}

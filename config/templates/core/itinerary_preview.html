@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Preview · TripHelix{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        <h2>{{ destination }}</h2>
+        <p class="trip-dates">{{ start_date|date:"M d, Y" }} → {{ end_date|date:"M d, Y" }}</p>
+        {% if interests %}
+            <p><strong>Interests:</strong> {{ interests }}</p>
+        {% endif %}
+        <p><strong>Travel style:</strong> {{ preference }}</p>
+    </div>
+    <div>
+        <p><strong>Save this itinerary</strong></p>
+        <ul>
+            {% if user.is_authenticated %}
+                <li>
+                    <form method="post" action="{% url 'core:itinerary_save_pending' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="cta-button">Save to my trips</button>
+                    </form>
+                </li>
+            {% else %}
+                <li><a class="cta-button" href="{% url 'users:login' %}?next={% url 'core:itinerary_save_pending' %}">Sign in to save</a></li>
+                <li><a href="{% url 'users:register' %}?next={% url 'core:itinerary_save_pending' %}">Create an account</a> to keep itineraries synced.</li>
+            {% endif %}
+            <li><a href="{% url 'core:itinerary_new' %}">Plan another itinerary</a></li>
+        </ul>
+    </div>
+</section>
+
+<section>
+    <div class="itinerary-content">
+        {{ generated_plan|safe }}
+    </div>
+</section>
+{% endblock %}

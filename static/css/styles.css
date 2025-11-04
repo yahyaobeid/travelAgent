@@ -415,6 +415,17 @@ button[type="submit"]:hover,
     color: #fff;
 }
 
+.button-secondary {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: var(--night) !important;
+    border: 1px solid rgba(11, 19, 43, 0.15);
+}
+
+.button-secondary:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+}
+
 .loading-overlay {
     position: fixed;
     inset: 0;

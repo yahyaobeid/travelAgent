@@ -44,10 +44,20 @@
             <button type="submit">Save changes</button>
             <a href="{% url 'core:itinerary_detail' itinerary.pk %}">Back to itinerary</a>
         {% else %}
-            <button type="submit">Generate itinerary</button>
+            <button type="submit" name="action" value="preview">Preview itinerary</button>
+            <button type="submit" name="action" value="save" class="button-secondary">
+                {% if user.is_authenticated %}
+                    Save to My Trips
+                {% else %}
+                    Save (sign in required)
+                {% endif %}
+            </button>
             <a href="{% url 'core:home' %}">Cancel</a>
         {% endif %}
     </div>
+    {% if not user.is_authenticated and not is_edit %}
+        <p class="auth-cta">You can preview itineraries without signing in. Create an account to save, edit, or send them.</p>
+    {% endif %}
 </form>
 
 <div id="loading-overlay" class="loading-overlay" aria-hidden="true">
