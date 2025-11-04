@@ -11,6 +11,9 @@
 
     <form method="post">
         {% csrf_token %}
+        {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+        {% endif %}
         {% for field in form %}
             <div>
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -24,6 +27,6 @@
         <button type="submit">Create account</button>
     </form>
 
-    <p class="auth-cta">Already registered? <a href="{% url 'users:login' %}">Sign in</a>.</p>
+    <p class="auth-cta">Already registered? <a href="{% url 'users:login' %}{% if next %}?next={{ next }}{% endif %}">Sign in</a>.</p>
 </div>
 {% endblock %}
