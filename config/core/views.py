@@ -7,8 +7,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .eventbrite import fetch_events
-from .forms import ItineraryForm, ItineraryUpdateForm
-from .models import Itinerary
+from .flights import FlightSearchError, search_flights_natural
+from .forms import FlightSearchForm, ItineraryForm, ItineraryUpdateForm
+from .models import FlightResult, FlightSearch, Itinerary
 from .services import ItineraryGenerationError, ItineraryRequest, generate_itinerary
 from .utils import render_markdown
 
@@ -234,3 +235,97 @@ def save_pending_itinerary(request):
     request.session.pop(PENDING_SESSION_KEY, None)
     messages.success(request, "Itinerary saved to your trips.")
     return redirect("core:itinerary_detail", pk=itinerary.pk)
+
+
+def flight_search(request):
+    """Accept a natural-language flight query, search via AI, and display results."""
+    if request.method == "POST":
+        form = FlightSearchForm(request.POST)
+        if form.is_valid():
+            query = form.cleaned_data["query"]
+            LOGGER.info(
+                "Flight search by %s: %s",
+                request.user if request.user.is_authenticated else "anonymous",
+                query,
+            )
+            try:
+                params, flights = search_flights_natural(query)
+            except (ImproperlyConfigured, FlightSearchError) as exc:
+                form.add_error(None, str(exc))
+            else:
+                # Save search and results if user is authenticated
+                search_obj = None
+                if request.user.is_authenticated:
+                    search_obj = FlightSearch.objects.create(
+                        user=request.user,
+                        natural_query=query,
+                        origin_airport=params.origin_airport,
+                        destination_airport=params.destination_airport,
+                        departure_date=params.departure_date,
+                        return_date=params.return_date,
+                        passengers=params.passengers,
+                        cabin_class=params.cabin_class,
+                    )
+                    for f in flights:
+                        FlightResult.objects.create(
+                            search=search_obj,
+                            airline=f.airline,
+                            flight_number=f.flight_number,
+                            departure_time=f.departure_time,
+                            arrival_time=f.arrival_time,
+                            duration=f.duration,
+                            stops=f.stops,
+                            price_cents=f.price,
+                            currency=f.currency,
+                            booking_url=f.booking_url,
+                            raw_data=f.raw_data,
+                        )
+                    return redirect("core:flight_results", pk=search_obj.pk)
+
+                # Anonymous: render results inline
+                return render(request, "core/flight_results.html", {
+                    "params": params,
+                    "flights": flights,
+                    "search": None,
+                })
+    else:
+        form = FlightSearchForm()
+
+    return render(request, "core/flight_search.html", {"form": form})
+
+
+@login_required
+def flight_results(request, pk: int):
+    """Display saved flight search results."""
+    search_obj = get_object_or_404(FlightSearch, pk=pk, user=request.user)
+    results = search_obj.results.all()
+
+    # Check for price history on the same route
+    previous_searches = (
+        FlightSearch.objects.filter(
+            user=request.user,
+            origin_airport=search_obj.origin_airport,
+            destination_airport=search_obj.destination_airport,
+            departure_date=search_obj.departure_date,
+        )
+        .exclude(pk=search_obj.pk)
+        .order_by("-created_at")[:1]
+    )
+    price_change = None
+    if previous_searches:
+        prev = previous_searches[0]
+        prev_cheapest = prev.results.first()
+        curr_cheapest = results.first()
+        if prev_cheapest and curr_cheapest:
+            diff = curr_cheapest.price_cents - prev_cheapest.price_cents
+            if diff != 0:
+                price_change = {
+                    "amount": abs(diff) / 100,
+                    "direction": "down" if diff < 0 else "up",
+                }
+
+    return render(request, "core/flight_results.html", {
+        "search": search_obj,
+        "results": results,
+        "price_change": price_change,
+    })
