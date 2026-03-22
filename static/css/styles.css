@@ -563,6 +563,118 @@ code {
     background: rgba(255, 255, 255, 0.18);
 }
 
+/* Flight results */
+.flight-results-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.flight-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 20px 45px -30px rgba(11, 19, 43, 0.35);
+    border: 1px solid rgba(11, 19, 43, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.flight-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 24px 45px -30px rgba(11, 19, 43, 0.4);
+}
+
+.flight-card-main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    flex: 1;
+}
+
+.flight-airline {
+    min-width: 140px;
+}
+
+.flight-number {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+}
+
+.flight-times {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.flight-arrow {
+    color: var(--ocean);
+}
+
+.flight-meta-info {
+    display: flex;
+    gap: 1rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.flight-stops {
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(67, 97, 238, 0.1);
+    font-size: 0.8rem;
+}
+
+.flight-card-price {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.flight-price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--night);
+}
+
+.flight-book-link {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    background: linear-gradient(246deg, var(--ocean), var(--sky));
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+
+.flight-book-link:hover {
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.price-change {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.price-down {
+    color: #2d9d78;
+}
+
+.price-up {
+    color: #d62828;
+}
+
 @media (max-width: 720px) {
     header {
         padding: 1.25rem;
@@ -618,5 +730,16 @@ code {
 
     form {
         padding: 1.5rem;
+    }
+
+    .flight-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .flight-card-price {
+        align-items: flex-start;
+        flex-direction: row;
+        gap: 1rem;
     }
 }

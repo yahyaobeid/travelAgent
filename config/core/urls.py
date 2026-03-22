@@ -12,4 +12,6 @@ urlpatterns = [
     path("itineraries/<int:pk>/edit/", views.edit_itinerary, name="itinerary_edit"),
     path("itineraries/<int:pk>/delete/", views.delete_itinerary, name="itinerary_delete"),
     path("itineraries/save-pending/", views.save_pending_itinerary, name="itinerary_save_pending"),
+    path("flights/", views.flight_search, name="flight_search"),
+    path("flights/<int:pk>/", views.flight_results, name="flight_results"),
 ]
