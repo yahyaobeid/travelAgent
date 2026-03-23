@@ -63,17 +63,17 @@ class CarRentalSearchError(Exception):
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _get_anthropic_client():
-    api_key = getattr(settings, "ANTHROPIC_API_KEY", None)
+def _get_openai_client():
+    api_key = getattr(settings, "OPENAI_API_KEY", None)
     if not api_key:
-        raise ImproperlyConfigured("ANTHROPIC_API_KEY is not configured.")
+        raise ImproperlyConfigured("OPENAI_API_KEY is not configured.")
     try:
-        from anthropic import Anthropic
+        from openai import OpenAI
     except ImportError as exc:
         raise CarRentalSearchError(
-            "Anthropic SDK is not installed. Add 'anthropic' to your dependencies."
+            "OpenAI SDK is not installed. Add 'openai' to your dependencies."
         ) from exc
-    return Anthropic(api_key=api_key)
+    return OpenAI(api_key=api_key)
 
 
 def _extract_json_object(text: str) -> dict:
@@ -97,65 +97,74 @@ def _extract_json_array(text: str) -> list:
 
 
 # ---------------------------------------------------------------------------
-# Tool definitions for Claude
+# Tool definitions for OpenAI function calling
 # ---------------------------------------------------------------------------
 
 TOOLS = [
     {
-        "name": "search_google",
-        "description": (
-            "Search Google for car rental listings. Returns a list of top result "
-            "URLs and snippets. Use specific queries including location, car type, "
-            "and dates to find relevant rental pages."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "The Google search query string",
-                }
+        "type": "function",
+        "function": {
+            "name": "search_google",
+            "description": (
+                "Search Google for car rental listings. Returns a list of top result "
+                "URLs and snippets. Use specific queries including location, car type, "
+                "and dates to find relevant rental pages."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The Google search query string",
+                    }
+                },
+                "required": ["query"],
             },
-            "required": ["query"],
         },
     },
     {
-        "name": "scrape_page",
-        "description": (
-            "Fetch a web page and return its cleaned text content. Use this to "
-            "read the content of car rental listing pages found via search."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "url": {
-                    "type": "string",
-                    "description": "The URL to fetch and parse",
-                }
+        "type": "function",
+        "function": {
+            "name": "scrape_page",
+            "description": (
+                "Fetch a web page and return its cleaned text content. Use this to "
+                "read the content of car rental listing pages found via search."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL to fetch and parse",
+                    }
+                },
+                "required": ["url"],
             },
-            "required": ["url"],
         },
     },
     {
-        "name": "extract_car_listings",
-        "description": (
-            "Extract structured car rental listing data from raw page text. "
-            "Returns a JSON array of car rental objects with price, car details, "
-            "and links. Use this after scraping a page to get structured data."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "raw_text": {
-                    "type": "string",
-                    "description": "The raw text content from a scraped page",
+        "type": "function",
+        "function": {
+            "name": "extract_car_listings",
+            "description": (
+                "Extract structured car rental listing data from raw page text. "
+                "Returns a JSON array of car rental objects with price, car details, "
+                "and links. Use this after scraping a page to get structured data."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "raw_text": {
+                        "type": "string",
+                        "description": "The raw text content from a scraped page",
+                    },
+                    "source_url": {
+                        "type": "string",
+                        "description": "The URL the text was scraped from",
+                    },
                 },
-                "source_url": {
-                    "type": "string",
-                    "description": "The URL the text was scraped from",
-                },
+                "required": ["raw_text", "source_url"],
             },
-            "required": ["raw_text", "source_url"],
         },
     },
 ]
@@ -219,7 +228,7 @@ def _tool_scrape_page(url: str) -> str:
 def _tool_extract_car_listings(
     raw_text: str, source_url: str, client, model: str
 ) -> list[dict]:
-    """Use Claude to extract structured car listings from raw page text."""
+    """Use OpenAI to extract structured car listings from raw page text."""
     domain = urlparse(source_url).netloc
 
     system_prompt = (
@@ -239,20 +248,19 @@ def _tool_extract_car_listings(
     )
 
     try:
-        response = client.messages.create(
+        response = client.chat.completions.create(
             model=model,
             max_tokens=4096,
-            system=system_prompt,
-            messages=[{"role": "user", "content": raw_text[:SCRAPE_MAX_CHARS]}],
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": raw_text[:SCRAPE_MAX_CHARS]},
+            ],
         )
     except Exception as exc:
         LOGGER.warning("Extract listings failed: %s", exc)
         return []
 
-    result_text = ""
-    for block in response.content:
-        if block.type == "text":
-            result_text += block.text
+    result_text = response.choices[0].message.content or ""
 
     try:
         listings = _extract_json_array(result_text)
@@ -307,9 +315,9 @@ def _dispatch_tool(name: str, input_data: dict, client, model: str):
 # ---------------------------------------------------------------------------
 
 def parse_car_rental_query(query: str) -> CarRentalSearchParams:
-    """Use Claude to extract structured car rental params from natural language."""
-    client = _get_anthropic_client()
-    model = getattr(settings, "ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
+    """Use OpenAI to extract structured car rental params from natural language."""
+    client = _get_openai_client()
+    model = getattr(settings, "OPENAI_MODEL", "gpt-4o-mini")
     today = date.today().isoformat()
 
     system_prompt = (
@@ -327,19 +335,18 @@ def parse_car_rental_query(query: str) -> CarRentalSearchParams:
     LOGGER.info("Parsing car rental query: %s", query)
 
     try:
-        response = client.messages.create(
+        response = client.chat.completions.create(
             model=model,
             max_tokens=1024,
-            system=system_prompt,
-            messages=[{"role": "user", "content": query}],
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": query},
+            ],
         )
     except Exception as exc:
         raise CarRentalSearchError(f"Failed to parse car rental query: {exc}") from exc
 
-    raw_text = ""
-    for block in response.content:
-        if block.type == "text":
-            raw_text += block.text
+    raw_text = response.choices[0].message.content or ""
 
     LOGGER.info("Parse response: %s", raw_text)
 
@@ -371,9 +378,9 @@ def parse_car_rental_query(query: str) -> CarRentalSearchParams:
 # ---------------------------------------------------------------------------
 
 def search_car_rentals(params: CarRentalSearchParams) -> list[CarRentalListing]:
-    """Run the Claude agent loop to find car rental listings."""
-    client = _get_anthropic_client()
-    model = getattr(settings, "ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
+    """Run the OpenAI agent loop to find car rental listings."""
+    client = _get_openai_client()
+    model = getattr(settings, "OPENAI_MODEL", "gpt-4o-mini")
 
     system_prompt = (
         "You are a car rental search agent. Your goal is to find exactly 20 car rental "
@@ -405,17 +412,19 @@ def search_car_rentals(params: CarRentalSearchParams) -> list[CarRentalListing]:
     user_message = " ".join(parts)
     LOGGER.info("Agent user message: %s", user_message)
 
-    messages = [{"role": "user", "content": user_message}]
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message},
+    ]
     all_listings: list[dict] = []
 
     for iteration in range(MAX_AGENT_ITERATIONS):
         LOGGER.info("Agent iteration %d, listings so far: %d", iteration + 1, len(all_listings))
 
         try:
-            response = client.messages.create(
+            response = client.chat.completions.create(
                 model=model,
                 max_tokens=4096,
-                system=system_prompt,
                 messages=messages,
                 tools=TOOLS,
             )
@@ -423,37 +432,24 @@ def search_car_rentals(params: CarRentalSearchParams) -> list[CarRentalListing]:
             LOGGER.error("Agent API call failed: %s", exc)
             break
 
-        # Build assistant message content for conversation history
-        assistant_content = []
-        tool_calls = []
+        message = response.choices[0].message
 
-        for block in response.content:
-            if block.type == "text":
-                assistant_content.append({"type": "text", "text": block.text})
-            elif block.type == "tool_use":
-                assistant_content.append({
-                    "type": "tool_use",
-                    "id": block.id,
-                    "name": block.name,
-                    "input": block.input,
-                })
-                tool_calls.append(block)
-
-        messages.append({"role": "assistant", "content": assistant_content})
+        # Append the assistant message to conversation history
+        messages.append(message)
 
         # If no tool calls, the agent decided to stop
-        if not tool_calls:
+        if not message.tool_calls:
             LOGGER.info("Agent stopped (no tool calls)")
             break
 
         # Execute each tool call and build results
-        tool_results = []
-        for tc in tool_calls:
-            LOGGER.info("Tool call: %s(%s)", tc.name, json.dumps(tc.input)[:200])
-            result_str = _dispatch_tool(tc.name, tc.input, client, model)
+        for tc in message.tool_calls:
+            input_data = json.loads(tc.function.arguments)
+            LOGGER.info("Tool call: %s(%s)", tc.function.name, json.dumps(input_data)[:200])
+            result_str = _dispatch_tool(tc.function.name, input_data, client, model)
 
             # If this was an extract call, accumulate listings
-            if tc.name == "extract_car_listings":
+            if tc.function.name == "extract_car_listings":
                 try:
                     extracted = json.loads(result_str)
                     if isinstance(extracted, list):
@@ -462,13 +458,11 @@ def search_car_rentals(params: CarRentalSearchParams) -> list[CarRentalListing]:
                 except (json.JSONDecodeError, TypeError):
                     pass
 
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": tc.id,
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tc.id,
                 "content": result_str[:SCRAPE_MAX_CHARS],
             })
-
-        messages.append({"role": "user", "content": tool_results})
 
         if len(all_listings) >= TARGET_LISTINGS:
             LOGGER.info("Reached target of %d listings", TARGET_LISTINGS)
