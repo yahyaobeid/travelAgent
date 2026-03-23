@@ -148,8 +148,6 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_DESTINATION_MODEL = os.getenv("OPENAI_DESTINATION_MODEL", "gpt-4o-mini")
 TICKETMASTER_API_KEY = os.getenv("TICKETMASTER_API_KEY")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
 
 
 # Logging configuration to capture full outbound/inbound API I/O
