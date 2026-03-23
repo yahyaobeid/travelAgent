@@ -1,65 +1,83 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard · Travel Agent{% endblock %}
+{% block title %}TripHelix — AI-Powered Travel Itineraries{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div>
-        <h2>Hello{% if user.first_name %} {{ user.first_name }}{% endif %}! Your next adventure awaits.</h2>
-        <p>Craft custom day-by-day plans, restaurant picks, and hidden gems powered by AI travel experts.</p>
+<section class="hero fade-up">
+    <div class="hero-main">
+        <span class="hero-eyebrow">AI Travel Planning</span>
+        <h2>
+            {% if user.is_authenticated and user.first_name %}
+                Welcome back, {{ user.first_name }}.
+            {% else %}
+                Your next adventure,<br>perfectly planned.
+            {% endif %}
+        </h2>
+        <p>Tell us where you're headed. We'll craft a day-by-day itinerary with curated activities, dining, and local events — powered by AI.</p>
         <a href="{% url 'itinerary:new' %}" class="cta-button">Start planning</a>
     </div>
-    <div>
-        <p><strong>Trip inspiration</strong></p>
+    <div class="hero-aside">
+        <p class="hero-aside-title">Explore styles</p>
         <ul>
             <li>Weekend city escapes</li>
             <li>Bucket-list tours</li>
-            <li>Family-friendly adventures</li>
-            <li>Work-from-anywhere getaways</li>
+            <li>Family adventures</li>
+            <li>Work-from-anywhere</li>
+            <li>Cultural deep dives</li>
         </ul>
     </div>
 </section>
 
 {% if user.is_authenticated %}
 <section>
-    <h3 class="section-title">Your itineraries</h3>
+    <div class="section-header">
+        <h3 class="section-title">Your itineraries</h3>
+        <div class="section-rule"></div>
+        <a href="{% url 'itinerary:new' %}" class="btn-secondary">+ New trip</a>
+    </div>
+
     {% if itineraries %}
-        <div class="card-grid">
+        <div class="card-grid stagger">
             {% for itinerary in itineraries %}
                 <article class="card">
-                    <h4><a href="{% url 'itinerary:detail' itinerary.pk %}">{{ itinerary.destination }}</a></h4>
-                    <div class="trip-meta">
-                        <span class="trip-dates">{{ itinerary.start_date|date:"M d, Y" }} → {{ itinerary.end_date|date:"M d, Y" }}</span>
-                        <span>Created {{ itinerary.created_at|date:"M d, Y H:i" }}</span>
-                        <span>Style: {{ itinerary.get_preference_display }}</span>
-                        {% if itinerary.interests %}
-                            <span>Focus: {{ itinerary.interests|truncatechars:50 }}</span>
-                        {% endif %}
+                    <div class="card-body">
+                        <span class="style-badge">{{ itinerary.get_preference_display }}</span>
+                        <h4 class="card-destination">
+                            <a href="{% url 'itinerary:detail' itinerary.pk %}">{{ itinerary.destination }}</a>
+                        </h4>
+                        <div class="trip-meta">
+                            <span class="trip-dates">{{ itinerary.start_date|date:"M d" }} – {{ itinerary.end_date|date:"M d, Y" }}</span>
+                            {% if itinerary.interests %}
+                                <span class="trip-meta-item">{{ itinerary.interests|truncatechars:55 }}</span>
+                            {% endif %}
+                        </div>
+                        <p class="card-excerpt">{{ itinerary.rendered_plan|striptags|truncatewords:28 }}</p>
                     </div>
-                    <p>{{ itinerary.rendered_plan|striptags|truncatewords:40 }}</p>
-                    <div class="card-actions">
-                        <a href="{% url 'itinerary:detail' itinerary.pk %}">View details</a>
-                        <a href="{% url 'itinerary:edit' itinerary.pk %}">Edit</a>
-                        <a class="danger-link" href="{% url 'itinerary:delete' itinerary.pk %}">Delete</a>
+                    <div class="card-footer">
+                        <a class="card-action" href="{% url 'itinerary:detail' itinerary.pk %}">View</a>
+                        <a class="card-action" href="{% url 'itinerary:edit' itinerary.pk %}">Edit</a>
+                        <a class="card-action card-action--danger" href="{% url 'itinerary:delete' itinerary.pk %}">Delete</a>
                     </div>
                 </article>
             {% endfor %}
         </div>
     {% else %}
-        <div class="empty-state">
-            <p>No itineraries yet. Kick off your first journey with a few quick travel details.</p>
-            <p><a class="cta-button" href="{% url 'itinerary:new' %}">Create your first itinerary</a></p>
+        <div class="empty-state fade-up">
+            <h3>No trips yet</h3>
+            <p>Kick off your first journey — just enter a destination, your dates, and what you're into.</p>
+            <a class="cta-button" href="{% url 'itinerary:new' %}">Create your first itinerary</a>
         </div>
     {% endif %}
 </section>
+
 {% else %}
-<section class="empty-state">
-    <h3>Create an account to save itineraries</h3>
-    <p>Preview as many trips as you like without signing in. When you're ready to keep, edit, or share them, simply create an account.</p>
-    <p>
+<section class="empty-state fade-up">
+    <h3>Save &amp; manage your trips</h3>
+    <p>Preview any itinerary without signing in. Create a free account to save, edit, and revisit your plans from anywhere.</p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
         <a class="cta-button" href="{% url 'users:register' %}">Create account</a>
-        or <a href="{% url 'users:login' %}">sign in</a>
-    </p>
+        <a class="btn-secondary" href="{% url 'users:login' %}">Sign in</a>
+    </div>
 </section>
 {% endif %}
 {% endblock %}

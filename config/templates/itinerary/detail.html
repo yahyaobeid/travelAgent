@@ -1,63 +1,63 @@
 {% extends "base.html" %}
 
-{% block title %}{{ itinerary.destination }} · Travel Agent{% endblock %}
+{% block title %}{{ itinerary.destination }} · TripHelix{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div>
-        <h2>{{ itinerary.destination }}</h2>
-        <p class="trip-dates">{{ itinerary.start_date|date:"M d, Y" }} → {{ itinerary.end_date|date:"M d, Y" }}</p>
-        <p><strong>Travel style:</strong> {{ itinerary.get_preference_display }}</p>
+<div class="itinerary-hero fade-up">
+    <h1 class="itinerary-destination">{{ itinerary.destination }}</h1>
+    <p class="itinerary-dates">{{ itinerary.start_date|date:"M d, Y" }} &mdash; {{ itinerary.end_date|date:"M d, Y" }}</p>
+
+    <div class="itinerary-meta-grid">
+        <span class="meta-pill"><strong>Style</strong> {{ itinerary.get_preference_display }}</span>
         {% if itinerary.interests %}
-            <p><strong>Focus:</strong> {{ itinerary.interests }}</p>
+            <span class="meta-pill"><strong>Focus</strong> {{ itinerary.interests }}</span>
         {% endif %}
         {% if itinerary.activities %}
-            <p><strong>Activities wish list:</strong> {{ itinerary.activities }}</p>
+            <span class="meta-pill"><strong>Activities</strong> {{ itinerary.activities|truncatechars:40 }}</span>
         {% endif %}
         {% if itinerary.food_preferences %}
-            <p><strong>Food & drink notes:</strong> {{ itinerary.food_preferences }}</p>
+            <span class="meta-pill"><strong>Food</strong> {{ itinerary.food_preferences|truncatechars:40 }}</span>
         {% endif %}
     </div>
-    <div>
-        <p><strong>Next steps</strong></p>
-        <ul>
-            <li><a href="{% url 'itinerary:edit' itinerary.pk %}">Edit this itinerary</a></li>
-            <li><a class="danger-link" href="{% url 'itinerary:delete' itinerary.pk %}">Delete this itinerary</a></li>
-            <li><a href="{% url 'itinerary:new' %}">Plan another adventure</a></li>
-            <li><a href="{% url 'core:home' %}">Return to dashboard</a></li>
-            <li>Share with your travel companions</li>
-        </ul>
-    </div>
-</section>
 
-<section>
-    <h3 class="section-title">Your curated plan</h3>
-    <div class="itinerary-content">
-        {{ itinerary.rendered_plan|safe }}
+    <div class="itinerary-actions">
+        <a class="btn-secondary" href="{% url 'itinerary:edit' itinerary.pk %}">Edit</a>
+        <a class="btn-secondary" href="{% url 'itinerary:new' %}">Plan another</a>
+        <a class="btn-secondary" href="{% url 'core:home' %}">Dashboard</a>
+        <a class="danger-link" style="font-size:0.82rem;margin-left:auto;" href="{% url 'itinerary:delete' itinerary.pk %}">Delete</a>
     </div>
-</section>
+</div>
 
-{% if events %}
-<section>
-    <h3 class="section-title">Events happening nearby</h3>
-    <div class="card-grid">
-        {% for event in events %}
-            <article class="card">
-                <h4><a href="{{ event.url }}" target="_blank" rel="noopener">{{ event.name }}</a></h4>
-                <p class="event-location">
-                    {{ event.requested_city|default:event.city }}
-                    {% if event.state %}, {{ event.state }}{% endif %}
-                    {% if event.country %} ({{ event.country }}){% endif %}
-                </p>
-                {% if event.start %}
-                    <p class="trip-dates">{{ event.start|date:"M d, Y H:i" }}</p>
-                {% endif %}
-                {% if event.description %}
-                    <p>{{ event.description }}</p>
-                {% endif %}
-            </article>
-        {% endfor %}
-    </div>
-</section>
-{% endif %}
+<div class="itinerary-layout">
+    <section>
+        <div class="itinerary-content">
+            {{ itinerary.rendered_plan|safe }}
+        </div>
+    </section>
+
+    {% if events %}
+    <aside class="itinerary-sidebar">
+        <div class="sidebar-card">
+            <p class="sidebar-card-title">Events nearby</p>
+            <div class="stagger">
+                {% for event in events %}
+                    <div class="event-card" style="margin-bottom:0.75rem;">
+                        <p class="event-name"><a href="{{ event.url }}" target="_blank" rel="noopener">{{ event.name }}</a></p>
+                        <p class="event-location">
+                            {{ event.requested_city|default:event.city }}{% if event.state %}, {{ event.state }}{% endif %}
+                            {% if event.country %} &middot; {{ event.country }}{% endif %}
+                        </p>
+                        {% if event.start %}
+                            <p class="event-date">{{ event.start|date:"M d, Y" }}</p>
+                        {% endif %}
+                        {% if event.description %}
+                            <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.35rem;font-weight:300;">{{ event.description|truncatechars:80 }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </aside>
+    {% endif %}
+</div>
 {% endblock %}

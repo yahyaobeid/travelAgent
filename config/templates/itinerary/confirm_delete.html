@@ -1,25 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Delete {{ itinerary.destination }} · Travel Agent{% endblock %}
+{% block title %}Delete {{ itinerary.destination }} · TripHelix{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div>
-        <h2>Remove this itinerary?</h2>
-        <p>Deleting <strong>{{ itinerary.destination }}</strong> will remove it permanently from your trips.</p>
-        <p>You can always generate a new itinerary later.</p>
-    </div>
-</section>
-
-<form method="post">
-    {% csrf_token %}
-    <p><strong>Trip dates:</strong> {{ itinerary.start_date|date:"M d, Y" }} → {{ itinerary.end_date|date:"M d, Y" }}</p>
-    {% if itinerary.interests %}
-        <p><strong>Focus:</strong> {{ itinerary.interests }}</p>
-    {% endif %}
-    <div class="form-actions">
-        <button type="submit" class="danger">Yes, delete itinerary</button>
-        <a href="{% url 'itinerary:detail' itinerary.pk %}" class="button">Cancel</a>
-    </div>
-</form>
+<div class="confirm-card fade-up">
+    <div class="confirm-icon">&#9888;</div>
+    <h2>Remove this itinerary?</h2>
+    <p>
+        <strong>{{ itinerary.destination }}</strong> &mdash;
+        {{ itinerary.start_date|date:"M d" }} to {{ itinerary.end_date|date:"M d, Y" }}<br>
+        This action is permanent and cannot be undone.
+    </p>
+    <form method="post" style="padding:0;gap:0;">
+        {% csrf_token %}
+        <div class="form-actions" style="justify-content:center;">
+            <button type="submit" class="btn-danger btn-primary">Yes, delete</button>
+            <a class="btn-secondary" href="{% url 'itinerary:detail' itinerary.pk %}">Keep it</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

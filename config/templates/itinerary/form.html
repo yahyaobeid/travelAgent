@@ -1,92 +1,79 @@
 {% extends "base.html" %}
 
-{% block title %}New Itinerary · Travel Agent{% endblock %}
+{% block title %}{% if is_edit %}Edit Itinerary{% else %}Plan a Trip{% endif %} · TripHelix{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div>
-        {% if is_edit %}
-            <h2>Update your getaway</h2>
-            <p>Adjust the essentials or fine-tune the AI plan below. Regenerate the trip to get fresh recommendations.</p>
-        {% else %}
-            <h2>Tell us about your trip</h2>
-            <p>Share your destination, dates, and interests—we'll craft a personalised itinerary with activities, dining, and hidden gems.</p>
-        {% endif %}
-    </div>
-    <div>
-        <p><strong>Need ideas?</strong></p>
-        <ul>
-            <li>Romantic beach retreats</li>
-            <li>Cultural food tours</li>
-            <li>Outdoor adventures</li>
-            <li>Solo city explorations</li>
-        </ul>
-    </div>
-</section>
-
-<form method="post" id="itinerary-form">
-    {% csrf_token %}
-    {% if form.non_field_errors %}
-        <div class="errorlist">{{ form.non_field_errors }}</div>
-    {% endif %}
-    {% for field in form %}
-        <div>
-            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}
-                <small>{{ field.help_text }}</small>
+<div class="form-wrapper fade-up">
+    <div class="form-card">
+        <div class="form-card-header">
+            {% if is_edit %}
+                <h2>Update your getaway</h2>
+                <p>Adjust the details below. Regenerating the trip fetches fresh recommendations.</p>
+            {% else %}
+                <h2>Tell us about your trip</h2>
+                <p>Share your destination, dates, and travel style — we'll build a personalised day-by-day plan.</p>
             {% endif %}
-            {{ field.errors }}
         </div>
-    {% endfor %}
-    <div class="form-actions">
-        {% if is_edit %}
-            <button type="submit">Save changes</button>
-            <a href="{% url 'itinerary:detail' itinerary.pk %}">Back to itinerary</a>
-        {% else %}
-            <button type="submit" name="action" value="preview">
-                {% if user.is_authenticated %}
-                    Generate & save itinerary
+
+        <form method="post" id="itinerary-form">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <ul class="errorlist">{{ form.non_field_errors }}</ul>
+            {% endif %}
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+
+            <div class="form-actions">
+                {% if is_edit %}
+                    <button type="submit">Save changes</button>
+                    <a class="form-cancel" href="{% url 'itinerary:detail' itinerary.pk %}">Cancel</a>
                 {% else %}
-                    Preview itinerary
+                    <button type="submit" name="action" value="preview">
+                        {% if user.is_authenticated %}Generate &amp; save{% else %}Preview itinerary{% endif %}
+                    </button>
+                    {% if not user.is_authenticated %}
+                        <button type="submit" name="action" value="save" class="btn-secondary">
+                            Save (sign in required)
+                        </button>
+                    {% endif %}
+                    <a class="form-cancel" href="{% url 'core:home' %}">Cancel</a>
                 {% endif %}
-            </button>
-            {% if not user.is_authenticated %}
-                <button type="submit" name="action" value="save" class="button-secondary">
-                    Save (sign in required)
-                </button>
-            {% endif %}
-            <a href="{% url 'core:home' %}">Cancel</a>
-        {% endif %}
-    </div>
-    {% if not user.is_authenticated and not is_edit %}
-        <p class="auth-cta">You can preview itineraries without signing in. Create an account to save, edit, or send them.</p>
-    {% endif %}
-</form>
-
-<div id="loading-overlay" class="loading-overlay" aria-hidden="true">
-    <div class="loading-box">
-        <h3>Planning your journey...</h3>
-        <div class="progress-track" aria-hidden="true">
-            <div class="progress-plane">
-                <span class="plane-icon" aria-hidden="true">✈️</span>
             </div>
-        </div>
-        <p>We're asking our travel expert to map out the perfect itinerary.</p>
+
+            {% if not user.is_authenticated and not is_edit %}
+                <p class="auth-cta" style="padding:0 0 0.5rem;font-size:0.82rem;color:var(--text-muted);font-weight:300;">
+                    Preview without signing in. <a href="{% url 'users:register' %}">Create an account</a> to save &amp; manage itineraries.
+                </p>
+            {% endif %}
+        </form>
     </div>
 </div>
 
+<div id="loading-overlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-box">
+        <h3>Planning your journey&hellip;</h3>
+        <div class="compass-ring" aria-hidden="true"></div>
+        <p>Our travel expert is mapping out the perfect itinerary.</p>
+    </div>
+</div>
+
+{% block extra_js %}
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const form = document.querySelector("#itinerary-form");
         const overlay = document.getElementById("loading-overlay");
-        if (!form || !overlay) {
-            return;
-        }
+        if (!form || !overlay) return;
         form.addEventListener("submit", function () {
             overlay.classList.add("active");
             overlay.setAttribute("aria-hidden", "false");
         });
     });
 </script>
+{% endblock %}
 {% endblock %}

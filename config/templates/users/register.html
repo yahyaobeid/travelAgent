@@ -1,32 +1,36 @@
 {% extends "base.html" %}
 
-{% block title %}Register · Travel Agent{% endblock %}
+{% block title %}Create account · TripHelix{% endblock %}
 
 {% block content %}
 <div class="auth-wrapper">
-    <div class="auth-header">
-        <h2>Join Travel Agent</h2>
-        <p>Create an account to generate tailored itineraries and keep your trips organised.</p>
-    </div>
+    <div class="auth-card">
+        <div class="auth-header">
+            <span class="auth-logo">TripHelix</span>
+            <h2>Create your account</h2>
+        </div>
 
-    <form method="post">
-        {% csrf_token %}
-        {% if next %}
-            <input type="hidden" name="next" value="{{ next }}">
-        {% endif %}
-        {% for field in form %}
-            <div>
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                    <small>{{ field.help_text }}</small>
-                {% endif %}
-                {{ field.errors }}
+        <form method="post">
+            {% csrf_token %}
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            <div class="form-actions">
+                <button type="submit">Create account</button>
             </div>
-        {% endfor %}
-        <button type="submit">Create account</button>
-    </form>
+        </form>
 
-    <p class="auth-cta">Already registered? <a href="{% url 'users:login' %}{% if next %}?next={{ next }}{% endif %}">Sign in</a>.</p>
+        <div class="auth-cta">
+            Already have an account? <a href="{% url 'users:login' %}{% if next %}?next={{ next }}{% endif %}">Sign in</a>
+        </div>
+    </div>
 </div>
 {% endblock %}

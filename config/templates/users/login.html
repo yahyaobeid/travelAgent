@@ -1,35 +1,39 @@
 {% extends "base.html" %}
 
-{% block title %}Login · Travel Agent{% endblock %}
+{% block title %}Sign in · TripHelix{% endblock %}
 
 {% block content %}
 <div class="auth-wrapper">
-    <div class="auth-header">
-        <h2>Welcome back</h2>
-        <p>Sign in to revisit saved itineraries and craft new adventures.</p>
-    </div>
+    <div class="auth-card">
+        <div class="auth-header">
+            <span class="auth-logo">TripHelix</span>
+            <h2>Welcome back</h2>
+        </div>
 
-    <form method="post">
-        {% csrf_token %}
-        {% if form.non_field_errors %}
-            <div class="errorlist">{{ form.non_field_errors }}</div>
-        {% endif %}
-        {% for field in form %}
-            <div>
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                    <small>{{ field.help_text }}</small>
-                {% endif %}
-                {{ field.errors }}
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <ul class="errorlist">{{ form.non_field_errors }}</ul>
+            {% endif %}
+            {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+            <div class="form-actions">
+                <button type="submit">Sign in</button>
             </div>
-        {% endfor %}
-        {% if next %}
-            <input type="hidden" name="next" value="{{ next }}">
-        {% endif %}
-        <button type="submit">Sign in</button>
-    </form>
+        </form>
 
-    <p class="auth-cta">New here? <a href="{% url 'users:register' %}">Create an account</a>.</p>
+        <div class="auth-cta">
+            New here? <a href="{% url 'users:register' %}">Create an account</a>
+        </div>
+    </div>
 </div>
 {% endblock %}
