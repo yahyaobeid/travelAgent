@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Car Rental Results · TripHelix{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        {% if search %}
+            <h2>Car Rentals in {{ search.location }}</h2>
+            <p class="trip-dates">
+                {% if search.pickup_date %}{{ search.pickup_date|date:"M d, Y" }}{% endif %}
+                {% if search.dropoff_date %} &mdash; {{ search.dropoff_date|date:"M d, Y" }}{% endif %}
+            </p>
+            <p>
+                {% if search.car_type %}<strong>{{ search.car_type }}</strong> &middot; {% endif %}
+                {% if search.max_price_per_day %}Budget: ${{ search.max_price_per_day|floatformat:0 }}/day{% endif %}
+            </p>
+        {% elif params %}
+            <h2>Car Rentals in {{ params.location }}</h2>
+            <p class="trip-dates">
+                {% if params.pickup_date %}{{ params.pickup_date }}{% endif %}
+                {% if params.dropoff_date %} &mdash; {{ params.dropoff_date }}{% endif %}
+            </p>
+            <p>
+                {% if params.car_type %}<strong>{{ params.car_type }}</strong> &middot; {% endif %}
+                {% if params.max_price_per_day %}Budget: ${{ params.max_price_per_day|floatformat:0 }}/day{% endif %}
+            </p>
+        {% endif %}
+    </div>
+    <div>
+        <p><strong>Actions</strong></p>
+        <ul>
+            <li><a href="{% url 'core:car_rental_search' %}">Search again</a></li>
+            <li><a href="{% url 'core:home' %}">Back to dashboard</a></li>
+        </ul>
+    </div>
+</section>
+
+{% if results or listings %}
+<section>
+    <h3 class="section-title">Car rental options</h3>
+    <div class="flight-results-list">
+        {% for car in results %}
+            <article class="flight-card">
+                <div class="flight-card-main">
+                    <div class="flight-airline">
+                        <strong>{{ car.car_name }}</strong>
+                        {% if car.car_type %}
+                            <span class="flight-number">{{ car.car_type }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flight-times">
+                        <span>{{ car.rental_company }}</span>
+                    </div>
+                    <div class="flight-meta-info">
+                        <span>{{ car.location }}</span>
+                        {% if car.availability %}
+                            <span class="flight-stops">{{ car.availability }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flight-card-price">
+                    <span class="flight-price">{{ car.price_display }}</span>
+                    {% if car.listing_url %}
+                        <a href="{{ car.listing_url }}" target="_blank" rel="noopener" class="flight-book-link">View Deal</a>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+        {% for car in listings %}
+            <article class="flight-card">
+                <div class="flight-card-main">
+                    <div class="flight-airline">
+                        <strong>{{ car.car_name }}</strong>
+                        {% if car.car_type %}
+                            <span class="flight-number">{{ car.car_type }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flight-times">
+                        <span>{{ car.rental_company }}</span>
+                    </div>
+                    <div class="flight-meta-info">
+                        <span>{{ car.location }}</span>
+                        {% if car.availability %}
+                            <span class="flight-stops">{{ car.availability }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flight-card-price">
+                    <span class="flight-price">{{ car.price_display }}</span>
+                    {% if car.listing_url %}
+                        <a href="{{ car.listing_url }}" target="_blank" rel="noopener" class="flight-book-link">View Deal</a>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% else %}
+<section>
+    <div class="empty-state">
+        <p>No car rentals found for this search. Try adjusting your location or dates.</p>
+    </div>
+</section>
+{% endif %}
+
+{% if not user.is_authenticated and listings %}
+    <p class="auth-cta">
+        <a href="{% url 'users:register' %}">Create an account</a> to save searches and view them later.
+    </p>
+{% endif %}
+{% endblock %}

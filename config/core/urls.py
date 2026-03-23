@@ -14,4 +14,7 @@ urlpatterns = [
     path("itineraries/save-pending/", views.save_pending_itinerary, name="itinerary_save_pending"),
     path("flights/", views.flight_search, name="flight_search"),
     path("flights/<int:pk>/", views.flight_results, name="flight_results"),
+    path("car-rentals/", views.car_rental_search, name="car_rental_search"),
+    path("car-rentals/<int:pk>/", views.car_rental_results, name="car_rental_results"),
+    path("api/car-rentals/", views.car_rental_search_api, name="car_rental_search_api"),
 ]
