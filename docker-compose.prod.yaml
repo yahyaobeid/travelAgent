@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  web:
+    image: triphelix
+    container_name: travelagent_web
+    command: gunicorn config.wsgi:application --chdir /app/config --bind 0.0.0.0:8000 --workers 2 --timeout 120
+    ports:
+      - "0.0.0.0:8000:8000"
+    environment:
+      POSTGRES_HOST: postgres
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: travelagent_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-travelagent}
+      POSTGRES_USER: ${POSTGRES_USER:-travelagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-travelagent}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
