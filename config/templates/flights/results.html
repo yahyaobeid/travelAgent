@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block title %}Flight Results — TripHelix{% endblock %}
+
+{% block content %}
+
+<!-- Sticky refine-search bar -->
+<div class="flights-refine-bar" role="search" aria-label="Refine your flight search">
+    <form method="post" action="{% url 'flights:search' %}" class="flights-refine-form">
+        {% csrf_token %}
+        <label for="refine-query" class="sr-only">Refine your search</label>
+        <div class="flights-refine-input-wrap">
+            <svg class="flights-refine-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+                type="text"
+                id="refine-query"
+                name="query"
+                value="{{ query_text|default:'' }}"
+                placeholder="Refine your search…"
+                class="flights-refine-input"
+                autocomplete="off"
+            >
+        </div>
+        <button type="submit" class="btn btn-primary flights-refine-submit">
+            Search
+        </button>
+        <a href="{% url 'flights:search' %}" class="btn btn-secondary flights-new-search">
+            New search
+        </a>
+    </form>
+</div>
+
+<!-- Main results container -->
+<div class="flights-results-layout">
+
+{% if not flights %}
+<!-- ============================================================
+     EMPTY STATE
+     ============================================================ -->
+<div class="empty-state flights-empty">
+    <div class="empty-state-icon" aria-hidden="true">&#128648;</div>
+    <h2>No flights found</h2>
+    <p>
+        We couldn't find flights matching your request. Try adjusting your dates,
+        loosening your budget, or including nearby airports.
+    </p>
+    <a href="{% url 'flights:search' %}" class="btn btn-primary">Start a new search</a>
+</div>
+
+{% else %}
+<!-- ============================================================
+     SPOTLIGHT CARDS (top picks)
+     ============================================================ -->
+{% if spotlight_cards %}
+<section class="flights-spotlight" aria-labelledby="spotlight-heading">
+    <h2 class="section-title" id="spotlight-heading">
+        Top picks
+        <span class="flights-count-badge" aria-label="{{ total }} flights found">{{ total }} flight{{ total|pluralize }} found</span>
+    </h2>
+
+    <div class="flights-spotlight-grid">
+        {% for card in spotlight_cards %}
+        <article class="flights-spotlight-card flights-spotlight-card--{{ card.label|lower|cut:' ' }}"
+                 aria-label="{{ card.label }} flight: {{ card.flight.airline }} from {{ card.flight.origin }} to {{ card.flight.destination }}">
+
+            <!-- Label badge -->
+            <div class="flights-spotlight-header">
+                <span class="flights-label flights-label--{{ card.label|lower|cut:' ' }}" aria-label="Labeled as {{ card.label }}">
+                    {% if card.label == "Recommended" %}
+                        <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    {% elif card.label == "Cheapest" %}
+                        <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    {% elif card.label == "Fastest" %}
+                        <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    {% endif %}
+                    {{ card.label }}
+                </span>
+                {% if card.flight.labels %}
+                    {% for lbl in card.flight.labels %}
+                        {% if lbl != card.label %}
+                        <span class="flights-label flights-label--{{ lbl|lower|cut:' ' }}" aria-label="{{ lbl }}">{{ lbl }}</span>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Flight summary -->
+            <div class="flights-spotlight-body">
+                <div class="flights-airline">{{ card.flight.airline }}</div>
+                <div class="flights-route" aria-label="Route: {{ card.flight.origin }} to {{ card.flight.destination }}">
+                    <span class="flights-origin">{{ card.flight.origin }}</span>
+                    <span class="flights-route-arrow" aria-hidden="true">
+                        <svg width="20" height="10" viewBox="0 0 20 10" fill="none" aria-hidden="true">
+                            <path d="M1 5h17M14 1l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <span class="flights-dest">{{ card.flight.destination }}</span>
+                </div>
+
+                <div class="flights-times">
+                    <time class="flights-depart-time" datetime="{{ card.flight.departure_datetime }}">
+                        {{ card.flight.departure_datetime|slice:"11:16" }}
+                    </time>
+                    <span class="flights-times-sep" aria-hidden="true">–</span>
+                    <time class="flights-arrive-time" datetime="{{ card.flight.arrival_datetime }}">
+                        {{ card.flight.arrival_datetime|slice:"11:16" }}
+                    </time>
+                </div>
+
+                <div class="flights-meta-row">
+                    <span class="flights-duration">
+                        {% widthratio card.flight.duration_minutes 60 1 %}h
+                    </span>
+                    <span class="flights-dot" aria-hidden="true">&middot;</span>
+                    {% if card.flight.stops == 0 %}
+                        <span class="flights-stops flights-stops--nonstop" aria-label="Nonstop flight">Nonstop</span>
+                    {% elif card.flight.stops == 1 %}
+                        <span class="flights-stops" aria-label="1 stop">1 stop</span>
+                    {% else %}
+                        <span class="flights-stops" aria-label="{{ card.flight.stops }} stops">{{ card.flight.stops }} stops</span>
+                    {% endif %}
+                </div>
+
+                {% if card.flight.baggage_carry_on %}
+                <div class="flights-baggage flights-baggage--included" aria-label="Carry-on bag included">
+                    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Carry-on included
+                </div>
+                {% elif card.flight.baggage_carry_on == False %}
+                <div class="flights-baggage flights-baggage--excluded" aria-label="Carry-on not included">
+                    Carry-on not included
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Price -->
+            <div class="flights-spotlight-footer">
+                <div class="flights-price-block">
+                    <span class="flights-price" aria-label="Price: ${{ card.flight.price_total|floatformat:0 }}">
+                        ${{ card.flight.price_total|floatformat:0 }}
+                    </span>
+                    <span class="flights-price-note">per person</span>
+                </div>
+                {% if card.flight.booking_url %}
+                <a href="{{ card.flight.booking_url }}" target="_blank" rel="noopener noreferrer"
+                   class="btn btn-primary flights-book-btn"
+                   aria-label="Book {{ card.flight.airline }} {{ card.flight.flight_number }} for ${{ card.flight.price_total|floatformat:0 }} — opens in new tab">
+                    Book
+                    <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Tradeoff note -->
+            {% if card.flight.tradeoff_note %}
+            <div class="flights-tradeoff" role="note" aria-label="Tradeoff note">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                {{ card.flight.tradeoff_note }}
+            </div>
+            {% endif %}
+
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- ============================================================
+     FILTER + SORT CONTROLS
+     ============================================================ -->
+<div class="flights-controls" role="group" aria-label="Filter and sort flights">
+
+    <div class="flights-filter-group" aria-label="Filter by stops">
+        <span class="flights-controls-label" id="stops-filter-label">Stops:</span>
+        <div class="flights-filter-btns" role="radiogroup" aria-labelledby="stops-filter-label">
+            <button type="button" class="flights-filter-btn flights-filter-btn--active"
+                    data-filter-stops="all" aria-pressed="true" aria-label="Show all flights">
+                All
+            </button>
+            <button type="button" class="flights-filter-btn"
+                    data-filter-stops="0" aria-pressed="false" aria-label="Show nonstop flights only">
+                Nonstop
+            </button>
+            <button type="button" class="flights-filter-btn"
+                    data-filter-stops="1" aria-pressed="false" aria-label="Show 1-stop flights only">
+                1 stop
+            </button>
+            <button type="button" class="flights-filter-btn"
+                    data-filter-stops="2+" aria-pressed="false" aria-label="Show flights with 2 or more stops">
+                2+ stops
+            </button>
+        </div>
+    </div>
+
+    <div class="flights-sort-group" aria-label="Sort flights">
+        <span class="flights-controls-label" id="sort-label">Sort:</span>
+        <div class="flights-filter-btns" role="radiogroup" aria-labelledby="sort-label">
+            <button type="button" class="flights-filter-btn flights-filter-btn--active"
+                    data-sort="value" aria-pressed="true" aria-label="Sort by best value">
+                Best value
+            </button>
+            <button type="button" class="flights-filter-btn"
+                    data-sort="price" aria-pressed="false" aria-label="Sort by lowest price">
+                Price
+            </button>
+            <button type="button" class="flights-filter-btn"
+                    data-sort="duration" aria-pressed="false" aria-label="Sort by shortest duration">
+                Duration
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============================================================
+     ALL RESULTS LIST
+     ============================================================ -->
+<section class="flights-list-section" aria-labelledby="all-results-heading">
+    <h2 class="section-title" id="all-results-heading">
+        All results
+        <span class="flights-visible-count sr-only" aria-live="polite" aria-atomic="true"></span>
+    </h2>
+
+    <div class="flights-list" id="flights-list" role="list">
+        {% for f in flights %}
+        <article class="flights-list-card"
+                 data-stops="{{ f.stops }}"
+                 data-price="{{ f.price_total|floatformat:0 }}"
+                 data-duration="{{ f.duration_minutes }}"
+                 data-value="{{ f.value_score }}"
+                 role="listitem"
+                 aria-label="{{ f.airline }} {{ f.flight_number }}, {{ f.origin }} to {{ f.destination }}, ${{ f.price_total|floatformat:0 }}">
+
+            <!-- Left: airline + route info -->
+            <div class="flights-card-main">
+
+                <div class="flights-card-airline-row">
+                    <span class="flights-card-airline">{{ f.airline }}</span>
+                    <span class="flights-card-flightnum" aria-label="Flight number {{ f.flight_number }}">{{ f.flight_number }}</span>
+                    {% for lbl in f.labels %}
+                    <span class="flights-label flights-label--{{ lbl|lower|cut:' ' }}">{{ lbl }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="flights-card-route">
+                    <div class="flights-card-endpoint">
+                        <time class="flights-card-time" datetime="{{ f.departure_datetime }}">{{ f.departure_datetime|slice:"11:16" }}</time>
+                        <span class="flights-card-airport">{{ f.origin }}</span>
+                        <span class="flights-card-date">{{ f.departure_datetime|slice:":10" }}</span>
+                    </div>
+
+                    <div class="flights-card-route-mid" aria-hidden="true">
+                        <div class="flights-card-duration-label">
+                            {% widthratio f.duration_minutes 60 1 %}h
+                        </div>
+                        <div class="flights-card-route-line">
+                            <div class="flights-card-route-dot"></div>
+                            <div class="flights-card-route-track"></div>
+                            {% if f.stops > 0 %}
+                            <div class="flights-card-route-stop-dot" aria-hidden="true"></div>
+                            {% endif %}
+                            <div class="flights-card-route-track"></div>
+                            <div class="flights-card-route-dot"></div>
+                        </div>
+                        {% if f.stops == 0 %}
+                            <div class="flights-card-stops flights-card-stops--nonstop">Nonstop</div>
+                        {% elif f.stops == 1 %}
+                            <div class="flights-card-stops">1 stop</div>
+                        {% else %}
+                            <div class="flights-card-stops">{{ f.stops }} stops</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="flights-card-endpoint flights-card-endpoint--right">
+                        <time class="flights-card-time" datetime="{{ f.arrival_datetime }}">{{ f.arrival_datetime|slice:"11:16" }}</time>
+                        <span class="flights-card-airport">{{ f.destination }}</span>
+                        <span class="flights-card-date">{{ f.arrival_datetime|slice:":10" }}</span>
+                    </div>
+                </div>
+
+                {% if f.tradeoff_note %}
+                <div class="flights-tradeoff flights-tradeoff--inline" role="note">
+                    <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    {{ f.tradeoff_note }}
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- Right: price + baggage + book -->
+            <div class="flights-card-aside">
+                <div class="flights-price" aria-label="Price ${{ f.price_total|floatformat:0 }}">
+                    ${{ f.price_total|floatformat:0 }}
+                </div>
+
+                {% if f.baggage_carry_on %}
+                <div class="flights-baggage flights-baggage--included" aria-label="Carry-on included">
+                    <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Carry-on incl.
+                </div>
+                {% elif f.baggage_carry_on == False %}
+                <div class="flights-baggage flights-baggage--excluded" aria-label="Carry-on not included">
+                    No carry-on
+                </div>
+                {% endif %}
+
+                {% if f.booking_url %}
+                <a href="{{ f.booking_url }}" target="_blank" rel="noopener noreferrer"
+                   class="btn btn-primary flights-book-btn"
+                   aria-label="Book {{ f.airline }} {{ f.flight_number }} for ${{ f.price_total|floatformat:0 }} — opens in new tab">
+                    Book
+                    <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                {% endif %}
+            </div>
+
+        </article>
+        {% endfor %}
+    </div>
+
+    <!-- No results after filter -->
+    <div class="flights-filter-empty" id="flights-filter-empty" hidden aria-live="polite">
+        <p>No flights match this filter. <button type="button" class="flights-filter-reset-link" id="reset-filter-link">Clear filter</button> to see all results.</p>
+    </div>
+</section>
+
+<!-- Price freshness disclaimer -->
+<p class="flights-disclaimer" role="note">
+    <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    Prices are live estimates &mdash; confirm final price and availability on the booking platform before purchase.
+</p>
+
+{% endif %}
+</div><!-- end .flights-results-layout -->
+
+<script>
+(function () {
+    'use strict';
+
+    var list = document.getElementById('flights-list');
+    var filterEmpty = document.getElementById('flights-filter-empty');
+    var resetLink = document.getElementById('reset-filter-link');
+    var visibleCount = document.querySelector('.flights-visible-count');
+
+    if (!list) return;
+
+    var allCards = Array.prototype.slice.call(list.querySelectorAll('.flights-list-card'));
+    var currentStopsFilter = 'all';
+    var currentSort = 'value';
+
+    // ---- Filtering ----
+    function applyFilter() {
+        var visible = 0;
+        allCards.forEach(function (card) {
+            var stops = parseInt(card.dataset.stops, 10);
+            var show = true;
+            if (currentStopsFilter === '0') {
+                show = stops === 0;
+            } else if (currentStopsFilter === '1') {
+                show = stops === 1;
+            } else if (currentStopsFilter === '2+') {
+                show = stops >= 2;
+            }
+            card.hidden = !show;
+            if (show) visible++;
+        });
+
+        if (filterEmpty) {
+            filterEmpty.hidden = visible > 0;
+        }
+        if (visibleCount) {
+            visibleCount.textContent = visible + ' flight' + (visible !== 1 ? 's' : '') + ' shown';
+        }
+    }
+
+    // ---- Sorting ----
+    function applySort() {
+        var sorted = allCards.slice().sort(function (a, b) {
+            if (currentSort === 'price') {
+                return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+            } else if (currentSort === 'duration') {
+                return parseInt(a.dataset.duration, 10) - parseInt(b.dataset.duration, 10);
+            } else {
+                // Best value: sort descending by value_score
+                return parseFloat(b.dataset.value) - parseFloat(a.dataset.value);
+            }
+        });
+        // Re-append in sorted order
+        sorted.forEach(function (card) { list.appendChild(card); });
+        // Re-sync allCards order
+        allCards = sorted;
+    }
+
+    // ---- Filter button clicks ----
+    var filterBtns = document.querySelectorAll('[data-filter-stops]');
+    filterBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            filterBtns.forEach(function (b) {
+                b.classList.remove('flights-filter-btn--active');
+                b.setAttribute('aria-pressed', 'false');
+            });
+            btn.classList.add('flights-filter-btn--active');
+            btn.setAttribute('aria-pressed', 'true');
+            currentStopsFilter = btn.dataset.filterStops;
+            applyFilter();
+        });
+    });
+
+    // ---- Sort button clicks ----
+    var sortBtns = document.querySelectorAll('[data-sort]');
+    sortBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            sortBtns.forEach(function (b) {
+                b.classList.remove('flights-filter-btn--active');
+                b.setAttribute('aria-pressed', 'false');
+            });
+            btn.classList.add('flights-filter-btn--active');
+            btn.setAttribute('aria-pressed', 'true');
+            currentSort = btn.dataset.sort;
+            applySort();
+        });
+    });
+
+    // ---- Reset filter link ----
+    if (resetLink) {
+        resetLink.addEventListener('click', function () {
+            filterBtns.forEach(function (b) {
+                var isAll = b.dataset.filterStops === 'all';
+                b.classList.toggle('flights-filter-btn--active', isAll);
+                b.setAttribute('aria-pressed', isAll ? 'true' : 'false');
+            });
+            currentStopsFilter = 'all';
+            applyFilter();
+        });
+    }
+
+    // Initial state
+    applyFilter();
+})();
+</script>
+{% endblock %}

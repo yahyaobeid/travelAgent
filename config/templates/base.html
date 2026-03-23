@@ -20,15 +20,15 @@
             </button>
             <nav id="primary-nav" class="nav-links">
                 <ul>
-                    <li class="nav-item"><a href="{% url 'core:flight_search' %}">Flights</a></li>
-                    <li class="nav-item"><a href="{% url 'core:car_rental_search' %}">Car Rentals</a></li>
+                    <li class="nav-item"><a href="{% url 'flights:search' %}">Flights</a></li>
+                    <li class="nav-item"><a href="{% url 'cars:search' %}">Car Rentals</a></li>
                     <li class="nav-item coming-soon-item">
                         <span class="coming-soon-label">Hotels</span>
                         <span class="coming-soon-tag">Coming soon</span>
                     </li>
                 {% if user.is_authenticated %}
                     <li class="nav-item"><a href="{% url 'core:home' %}">Dashboard</a></li>
-                    <li class="nav-item"><a href="{% url 'core:itinerary_new' %}">Plan a Trip</a></li>
+                    <li class="nav-item"><a href="{% url 'itinerary:new' %}">Plan a Trip</a></li>
                     <li class="nav-item">
                         <form id="logout-form" method="post" action="{% url 'users:logout' %}">
                             {% csrf_token %}

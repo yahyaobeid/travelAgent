@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Flight Results · TripHelix{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        {% if search %}
+            <h2>{{ search.origin_airport }} &rarr; {{ search.destination_airport }}</h2>
+            <p class="trip-dates">
+                {{ search.departure_date|date:"M d, Y" }}
+                {% if search.return_date %} &mdash; {{ search.return_date|date:"M d, Y" }}{% endif %}
+            </p>
+            <p>
+                <strong>{{ search.passengers }} passenger{{ search.passengers|pluralize }}</strong>
+                &middot; {{ search.cabin_class|capfirst }}
+            </p>
+        {% elif params %}
+            <h2>{{ params.origin_airport }} &rarr; {{ params.destination_airport }}</h2>
+            <p class="trip-dates">
+                {{ params.departure_date }}
+                {% if params.return_date %} &mdash; {{ params.return_date }}{% endif %}
+            </p>
+            <p>
+                <strong>{{ params.passengers }} passenger{{ params.passengers|pluralize }}</strong>
+                &middot; {{ params.cabin_class|capfirst }}
+            </p>
+        {% endif %}
+
+        {% if price_change %}
+            <p class="price-change price-{{ price_change.direction }}">
+                {% if price_change.direction == "down" %}
+                    Price dropped ${{ price_change.amount|floatformat:0 }} since last search
+                {% else %}
+                    Price increased ${{ price_change.amount|floatformat:0 }} since last search
+                {% endif %}
+            </p>
+        {% endif %}
+    </div>
+    <div>
+        <p><strong>Actions</strong></p>
+        <ul>
+            <li><a href="{% url 'flights:search' %}">Search again</a></li>
+            <li><a href="{% url 'core:home' %}">Back to dashboard</a></li>
+        </ul>
+    </div>
+</section>
+
+{% if results or flights %}
+<section>
+    <h3 class="section-title">Top flight options</h3>
+    <div class="flight-results-list">
+        {% for flight in results %}
+            <article class="flight-card">
+                <div class="flight-card-main">
+                    <div class="flight-airline">
+                        <strong>{{ flight.airline }}</strong>
+                        {% if flight.flight_number %}
+                            <span class="flight-number">{{ flight.flight_number }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flight-times">
+                        <span class="flight-depart">{{ flight.departure_time }}</span>
+                        <span class="flight-arrow">&rarr;</span>
+                        <span class="flight-arrive">{{ flight.arrival_time }}</span>
+                    </div>
+                    <div class="flight-meta-info">
+                        <span>{{ flight.duration }}</span>
+                        <span class="flight-stops">
+                            {% if flight.stops == 0 %}Nonstop{% elif flight.stops == 1 %}1 stop{% else %}{{ flight.stops }} stops{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="flight-card-price">
+                    <span class="flight-price">{{ flight.price_display }}</span>
+                    {% if flight.booking_url %}
+                        <a href="{{ flight.booking_url }}" target="_blank" rel="noopener" class="flight-book-link">Book</a>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+        {% for flight in flights %}
+            <article class="flight-card">
+                <div class="flight-card-main">
+                    <div class="flight-airline">
+                        <strong>{{ flight.airline }}</strong>
+                        {% if flight.flight_number %}
+                            <span class="flight-number">{{ flight.flight_number }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flight-times">
+                        <span class="flight-depart">{{ flight.departure_time }}</span>
+                        <span class="flight-arrow">&rarr;</span>
+                        <span class="flight-arrive">{{ flight.arrival_time }}</span>
+                    </div>
+                    <div class="flight-meta-info">
+                        <span>{{ flight.duration }}</span>
+                        <span class="flight-stops">
+                            {% if flight.stops == 0 %}Nonstop{% elif flight.stops == 1 %}1 stop{% else %}{{ flight.stops }} stops{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="flight-card-price">
+                    <span class="flight-price">${{ flight.price|floatformat:0 }}</span>
+                    {% if flight.booking_url %}
+                        <a href="{{ flight.booking_url }}" target="_blank" rel="noopener" class="flight-book-link">Book</a>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% else %}
+<section>
+    <div class="empty-state">
+        <p>No flights found for this route and date. Try adjusting your search.</p>
+    </div>
+</section>
+{% endif %}
+
+{% if not user.is_authenticated and flights %}
+    <p class="auth-cta">
+        <a href="{% url 'users:register' %}">Create an account</a> to save searches and track price changes.
+    </p>
+{% endif %}
+{% endblock %}

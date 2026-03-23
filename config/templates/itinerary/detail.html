@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ itinerary.destination }} · Travel Agent{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        <h2>{{ itinerary.destination }}</h2>
+        <p class="trip-dates">{{ itinerary.start_date|date:"M d, Y" }} → {{ itinerary.end_date|date:"M d, Y" }}</p>
+        <p><strong>Travel style:</strong> {{ itinerary.get_preference_display }}</p>
+        {% if itinerary.interests %}
+            <p><strong>Focus:</strong> {{ itinerary.interests }}</p>
+        {% endif %}
+        {% if itinerary.activities %}
+            <p><strong>Activities wish list:</strong> {{ itinerary.activities }}</p>
+        {% endif %}
+        {% if itinerary.food_preferences %}
+            <p><strong>Food & drink notes:</strong> {{ itinerary.food_preferences }}</p>
+        {% endif %}
+    </div>
+    <div>
+        <p><strong>Next steps</strong></p>
+        <ul>
+            <li><a href="{% url 'itinerary:edit' itinerary.pk %}">Edit this itinerary</a></li>
+            <li><a class="danger-link" href="{% url 'itinerary:delete' itinerary.pk %}">Delete this itinerary</a></li>
+            <li><a href="{% url 'itinerary:new' %}">Plan another adventure</a></li>
+            <li><a href="{% url 'core:home' %}">Return to dashboard</a></li>
+            <li>Share with your travel companions</li>
+        </ul>
+    </div>
+</section>
+
+<section>
+    <h3 class="section-title">Your curated plan</h3>
+    <div class="itinerary-content">
+        {{ itinerary.rendered_plan|safe }}
+    </div>
+</section>
+
+{% if events %}
+<section>
+    <h3 class="section-title">Events happening nearby</h3>
+    <div class="card-grid">
+        {% for event in events %}
+            <article class="card">
+                <h4><a href="{{ event.url }}" target="_blank" rel="noopener">{{ event.name }}</a></h4>
+                <p class="event-location">
+                    {{ event.requested_city|default:event.city }}
+                    {% if event.state %}, {{ event.state }}{% endif %}
+                    {% if event.country %} ({{ event.country }}){% endif %}
+                </p>
+                {% if event.start %}
+                    <p class="trip-dates">{{ event.start|date:"M d, Y H:i" }}</p>
+                {% endif %}
+                {% if event.description %}
+                    <p>{{ event.description }}</p>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

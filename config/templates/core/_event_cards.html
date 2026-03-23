@@ -1,0 +1,57 @@
+{% comment %}
+Partial: core/_event_cards.html
+Renders a grid of event cards sourced from Ticketmaster.
+Required context variable: events (iterable of event objects)
+Optional context variable: section_heading (string, defaults to "Events happening nearby")
+{% endcomment %}
+{% if events %}
+<section class="events-section" aria-labelledby="events-heading">
+    <h2 id="events-heading" class="section-title">{{ section_heading|default:"Events happening nearby" }}</h2>
+    <div class="card-grid">
+        {% for event in events %}
+            <article class="event-card" aria-labelledby="event-title-{{ forloop.counter }}">
+                <a
+                    id="event-title-{{ forloop.counter }}"
+                    class="event-card-name"
+                    href="{{ event.url }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="{{ event.name }} (opens in new tab)"
+                >
+                    {{ event.name }}
+                </a>
+
+                <div class="event-card-meta">
+                    {% if event.start %}
+                        <span class="event-meta-chip date">
+                            &#128197; {{ event.start|date:"M d, Y" }}
+                            {% if event.start|date:"H:i" != "00:00" %}
+                                &middot; {{ event.start|date:"g:i A" }}
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                    {% if event.requested_city or event.city %}
+                        <span class="event-meta-chip location">
+                            &#128205; {{ event.requested_city|default:event.city }}{% if event.state %}, {{ event.state }}{% endif %}
+                        </span>
+                    {% endif %}
+                </div>
+
+                {% if event.description %}
+                    <p class="event-card-description">{{ event.description }}</p>
+                {% endif %}
+
+                <a
+                    href="{{ event.url }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="event-card-link"
+                    aria-label="View {{ event.name }} on Ticketmaster (opens in new tab)"
+                >
+                    View on Ticketmaster &#8599;
+                </a>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}

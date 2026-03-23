@@ -7,7 +7,7 @@
     <div>
         <h2>Hello{% if user.first_name %} {{ user.first_name }}{% endif %}! Your next adventure awaits.</h2>
         <p>Craft custom day-by-day plans, restaurant picks, and hidden gems powered by AI travel experts.</p>
-        <a href="{% url 'core:itinerary_new' %}" class="cta-button">Start planning</a>
+        <a href="{% url 'itinerary:new' %}" class="cta-button">Start planning</a>
     </div>
     <div>
         <p><strong>Trip inspiration</strong></p>
@@ -27,7 +27,7 @@
         <div class="card-grid">
             {% for itinerary in itineraries %}
                 <article class="card">
-                    <h4><a href="{% url 'core:itinerary_detail' itinerary.pk %}">{{ itinerary.destination }}</a></h4>
+                    <h4><a href="{% url 'itinerary:detail' itinerary.pk %}">{{ itinerary.destination }}</a></h4>
                     <div class="trip-meta">
                         <span class="trip-dates">{{ itinerary.start_date|date:"M d, Y" }} → {{ itinerary.end_date|date:"M d, Y" }}</span>
                         <span>Created {{ itinerary.created_at|date:"M d, Y H:i" }}</span>
@@ -38,9 +38,9 @@
                     </div>
                     <p>{{ itinerary.rendered_plan|striptags|truncatewords:40 }}</p>
                     <div class="card-actions">
-                        <a href="{% url 'core:itinerary_detail' itinerary.pk %}">View details</a>
-                        <a href="{% url 'core:itinerary_edit' itinerary.pk %}">Edit</a>
-                        <a class="danger-link" href="{% url 'core:itinerary_delete' itinerary.pk %}">Delete</a>
+                        <a href="{% url 'itinerary:detail' itinerary.pk %}">View details</a>
+                        <a href="{% url 'itinerary:edit' itinerary.pk %}">Edit</a>
+                        <a class="danger-link" href="{% url 'itinerary:delete' itinerary.pk %}">Delete</a>
                     </div>
                 </article>
             {% endfor %}
@@ -48,7 +48,7 @@
     {% else %}
         <div class="empty-state">
             <p>No itineraries yet. Kick off your first journey with a few quick travel details.</p>
-            <p><a class="cta-button" href="{% url 'core:itinerary_new' %}">Create your first itinerary</a></p>
+            <p><a class="cta-button" href="{% url 'itinerary:new' %}">Create your first itinerary</a></p>
         </div>
     {% endif %}
 </section>

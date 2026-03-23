@@ -45,6 +45,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "core",
+    "itinerary",
+    "flights",
+    "cars",
     "users",
 ]
 
@@ -178,9 +181,13 @@ LOGGING = {
     "loggers": {
         # Project apps
         "core": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": True},
-        "core.services": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
-        "core.eventbrite": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
-        "core.car_rentals": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
+        "itinerary": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": True},
+        "itinerary.services": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
+        "itinerary.eventbrite": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
+        "flights": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": True},
+        "flights.nl_search": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
+        "cars": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": True},
+        "cars.services": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},
 
         # Third-party HTTP clients
         "openai": {"handlers": ["console", "api_file"], "level": LOG_LEVEL, "propagate": False},

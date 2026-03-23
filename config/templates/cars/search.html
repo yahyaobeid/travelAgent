@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Find Car Rentals · TripHelix{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        <h2>Find car rentals</h2>
+        <p>Describe what you need in plain language and our AI agent will search for the best car rental deals.</p>
+    </div>
+    <div>
+        <p><strong>Try something like:</strong></p>
+        <ul>
+            <li>I need an SUV in Miami for under $80/day next weekend</li>
+            <li>Compact car in Los Angeles, March 28 to April 2</li>
+            <li>Cheapest minivan rental in Orlando for a week</li>
+            <li>Luxury sedan in New York City, budget $150/day</li>
+        </ul>
+    </div>
+</section>
+
+<form method="post" id="car-rental-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="errorlist">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% for field in form %}
+        <div>
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+                <small>{{ field.help_text }}</small>
+            {% endif %}
+            {{ field.errors }}
+        </div>
+    {% endfor %}
+    <div class="form-actions">
+        <button type="submit">Search car rentals</button>
+        <a href="{% url 'core:home' %}">Cancel</a>
+    </div>
+</form>
+
+<div id="loading-overlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-box">
+        <h3>Searching for car rentals...</h3>
+        <div class="progress-track" aria-hidden="true">
+            <div class="progress-plane">
+                <span class="plane-icon" aria-hidden="true">&#128663;</span>
+            </div>
+        </div>
+        <p>Our AI agent is searching rental sites for the best deals. This may take a minute.</p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var form = document.querySelector("#car-rental-form");
+        var overlay = document.getElementById("loading-overlay");
+        if (!form || !overlay) return;
+        form.addEventListener("submit", function () {
+            overlay.classList.add("active");
+            overlay.setAttribute("aria-hidden", "false");
+        });
+    });
+</script>
+{% endblock %}

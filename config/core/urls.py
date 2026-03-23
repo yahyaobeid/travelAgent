@@ -6,15 +6,4 @@ app_name = "core"
 
 urlpatterns = [
     path("", views.home, name="home"),
-    path("itineraries/new/", views.create_itinerary, name="itinerary_new"),
-    path("itineraries/preview/", views.preview_itinerary, name="itinerary_preview"),
-    path("itineraries/<int:pk>/", views.itinerary_detail, name="itinerary_detail"),
-    path("itineraries/<int:pk>/edit/", views.edit_itinerary, name="itinerary_edit"),
-    path("itineraries/<int:pk>/delete/", views.delete_itinerary, name="itinerary_delete"),
-    path("itineraries/save-pending/", views.save_pending_itinerary, name="itinerary_save_pending"),
-    path("flights/", views.flight_search, name="flight_search"),
-    path("flights/<int:pk>/", views.flight_results, name="flight_results"),
-    path("car-rentals/", views.car_rental_search, name="car_rental_search"),
-    path("car-rentals/<int:pk>/", views.car_rental_results, name="car_rental_results"),
-    path("api/car-rentals/", views.car_rental_search_api, name="car_rental_search_api"),
 ]
