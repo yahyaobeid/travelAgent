@@ -21,8 +21,9 @@
             <nav id="primary-nav" class="nav-links">
                 <ul>
                     <li class="nav-item"><a href="{% url 'core:flight_search' %}">Flights</a></li>
+                    <li class="nav-item"><a href="{% url 'core:car_rental_search' %}">Car Rentals</a></li>
                     <li class="nav-item coming-soon-item">
-                        <span class="coming-soon-label">Hotels · Cars</span>
+                        <span class="coming-soon-label">Hotels</span>
                         <span class="coming-soon-tag">Coming soon</span>
                     </li>
                 {% if user.is_authenticated %}
