@@ -1,231 +1,213 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
-import re
-from dataclasses import dataclass, field
-from datetime import date
+import os
 
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
+import serpapi
+from agents import Agent, ModelSettings, RunConfig, Runner, TResponseInputItem, function_tool, trace
+from pydantic import BaseModel
+from datetime import date
 
 LOGGER = logging.getLogger(__name__)
 
+_CABIN_MAP = {
+    "economy": 1,
+    "premium_economy": 2,
+    "premium economy": 2,
+    "business": 3,
+    "first": 4,
+}
 
-@dataclass
-class FlightSearchParams:
-    origin_airport: str
-    destination_airport: str
-    departure_date: str
-    return_date: str | None = None
-    passengers: int = 1
-    cabin_class: str = "economy"
-
-
-@dataclass
-class FlightOption:
-    airline: str
-    flight_number: str
-    departure_time: str
-    arrival_time: str
-    duration: str
-    stops: int
-    price: int  # cents
-    currency: str = "USD"
-    booking_url: str = ""
-    raw_data: dict = field(default_factory=dict)
+_SORT_MAP = {
+    "best": 1,
+    "top": 1,
+    "cheapest": 2,
+    "price": 2,
+    "fastest": 3,
+    "duration": 3,
+    "emissions": 4,
+}
 
 
 class FlightSearchError(Exception):
     """Raised when flight search fails."""
 
 
-def _get_openai_client():
-    api_key = getattr(settings, "OPENAI_API_KEY", None)
+@function_tool
+def search_google_flights(
+    origin: str,
+    destination: str,
+    depart_date: str,
+    return_date: str = "",
+    passengers: int = 1,
+    cabin: str = "economy",
+    max_stops: int = 1,
+    bags: int = 0,
+    sort_by: str = "best",
+) -> str:
+    api_key = os.environ.get("SERPAPI_API_KEY", "")
     if not api_key:
-        raise ImproperlyConfigured("OPENAI_API_KEY is not configured.")
+        return json.dumps({"error": "SERPAPI_API_KEY not configured"})
+
+    params: dict = {
+        "engine": "google_flights",
+        "hl": "en",
+        "gl": "us",
+        "departure_id": origin.upper(),
+        "arrival_id": destination.upper(),
+        "outbound_date": depart_date,
+        "currency": "USD",
+        "adults": str(passengers) if passengers else "1",
+    }
+
+    if return_date:
+        params["return_date"] = return_date
+
+    if cabin:
+        params["travel_class"] = str(_CABIN_MAP.get(cabin.lower(), 1))
+
+    if max_stops is not None and max_stops >= 0:
+        # SerpAPI: 0=any, 1=nonstop, 2=≤1 stop, 3=≤2 stops
+        params["stops"] = str(min(max_stops + 1, 3)) if max_stops <= 2 else "0"
+
+    if bags:
+        params["bags"] = str(bags)
+
+    if sort_by:
+        params["sort_by"] = str(_SORT_MAP.get(sort_by.lower(), 1))
+
+    LOGGER.info("SerpAPI call params: %s", params)
     try:
-        from openai import OpenAI
-    except ImportError as exc:
-        raise FlightSearchError(
-            "OpenAI SDK is not installed. Add 'openai' to your dependencies."
-        ) from exc
-    return OpenAI(api_key=api_key)
-
-
-def _extract_json_object(text: str) -> dict:
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        match = re.search(r"\{[\s\S]*\}", text)
-        if not match:
-            raise ValueError("No JSON object found in response.")
-        return json.loads(match.group(0))
-
-
-def _extract_json_array(text: str) -> list:
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        match = re.search(r"\[[\s\S]*\]", text)
-        if not match:
-            raise ValueError("No JSON array found in response.")
-        return json.loads(match.group(0))
-
-
-def parse_flight_query(query: str) -> FlightSearchParams:
-    """Use OpenAI to extract structured flight search params from natural language."""
-    client = _get_openai_client()
-    model = getattr(settings, "OPENAI_MODEL", "gpt-4o-mini")
-    today = date.today().isoformat()
-
-    system_prompt = (
-        "You are a flight search assistant. Extract flight search parameters from the user's query.\n"
-        "Return ONLY a JSON object with these keys:\n"
-        "- origin_airport: IATA airport code (e.g. JFK, LAX, LHR)\n"
-        "- destination_airport: IATA airport code\n"
-        "- departure_date: YYYY-MM-DD\n"
-        "- return_date: YYYY-MM-DD or null for one-way\n"
-        "- passengers: integer (default 1)\n"
-        "- cabin_class: economy, business, or first (default economy)\n\n"
-        "Resolve city names to their primary airport IATA codes.\n"
-        f"Today's date is {today}. Resolve relative dates (e.g. 'next Friday') accordingly.\n"
-        "Return ONLY the JSON object, no other text."
-    )
-
-    LOGGER.info("Parsing flight query: %s", query)
-
-    try:
-        response = client.responses.create(
-            model=model,
-            input=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": query},
-            ],
-            temperature=0,
-        )
+        client = serpapi.Client(api_key=api_key)
+        results = client.search(params)
+        results_dict = dict(results) if not isinstance(results, dict) else results
+        LOGGER.info("SerpAPI response keys: %s", list(results_dict.keys()))
+        error_info = results_dict.get("error")
+        if error_info:
+            LOGGER.error("SerpAPI returned error: %s", error_info)
+            return json.dumps({"error": error_info})
+        output = {
+            "best_flights": results_dict.get("best_flights", [])[:5],
+            "other_flights": results_dict.get("other_flights", [])[:5],
+            "price_insights": results_dict.get("price_insights"),
+        }
+        return json.dumps(output, indent=2)
     except Exception as exc:
-        raise FlightSearchError(f"Failed to parse flight query: {exc}") from exc
-
-    raw_text = getattr(response, "output_text", "") or ""
-    if not raw_text:
-        for item in getattr(response, "output", []):
-            for block in getattr(item, "content", []):
-                if getattr(block, "type", "") == "output_text":
-                    raw_text = getattr(block, "text", "")
-                    break
-
-    LOGGER.info("Parse response: %s", raw_text)
-
-    try:
-        data = _extract_json_object(raw_text)
-    except (ValueError, json.JSONDecodeError) as exc:
-        raise FlightSearchError(f"Could not parse flight parameters: {exc}") from exc
-
-    return FlightSearchParams(
-        origin_airport=data.get("origin_airport", "").upper(),
-        destination_airport=data.get("destination_airport", "").upper(),
-        departure_date=data.get("departure_date", ""),
-        return_date=data.get("return_date"),
-        passengers=int(data.get("passengers", 1)),
-        cabin_class=data.get("cabin_class", "economy"),
-    )
+        LOGGER.exception("SerpAPI call failed: %s", exc)
+        return json.dumps({"error": str(exc)})
 
 
-def search_flights(params: FlightSearchParams) -> list[FlightOption]:
-    """Use OpenAI with web search to find real flight options."""
-    client = _get_openai_client()
-    model = getattr(settings, "OPENAI_MODEL", "gpt-4o-mini")
+search_flights_agent = Agent(
+    name="Search Flights",
+    instructions=f"""You are an AI flight search agent.
 
-    trip_type = "round trip" if params.return_date else "one-way"
-    return_info = f", returning {params.return_date}" if params.return_date else ""
+Your job is to help users find the best flights based on their preferences using real-time data.
 
-    search_prompt = (
-        f"Search for {trip_type} flights from {params.origin_airport} to {params.destination_airport} "
-        f"departing {params.departure_date}{return_info}. "
-        f"{params.passengers} passenger(s), {params.cabin_class} class.\n\n"
-        "Find the top 5 best flight options from Google Flights, Expedia, Kayak, or similar sources. "
-        "For each flight, provide: airline name, flight number (if available), departure time, "
-        "arrival time, total duration, number of stops, and price in USD.\n\n"
-        "Return ONLY a JSON array of objects with these keys:\n"
-        "- airline: string\n"
-        "- flight_number: string (or empty string if unknown)\n"
-        "- departure_time: string (e.g. '8:30 AM')\n"
-        "- arrival_time: string (e.g. '4:45 PM')\n"
-        "- duration: string (e.g. '7h 15m')\n"
-        "- stops: integer (0 for nonstop)\n"
-        "- price_usd: integer (dollar amount, e.g. 450)\n"
-        "- booking_url: string (direct link if available, or empty string)\n\n"
-        "Return ONLY the JSON array, no other text."
-    )
+You have access to a tool called `search_google_flights` that retrieves flight results.
 
-    LOGGER.info("Searching flights: %s → %s on %s", params.origin_airport, params.destination_airport, params.departure_date)
+BEHAVIOR RULES:
 
-    try:
-        response = client.responses.create(
-            model=model,
-            tools=[{"type": "web_search_preview"}],
-            input=[
-                {"role": "user", "content": search_prompt},
-            ],
+1. Always collect required inputs before calling the tool:
+   - origin (IATA code)
+   - destination (IATA code)
+   - depart_date
+
+2. If any required info is missing, ask a follow-up question instead of guessing.
+
+3. Optional preferences to gather if not provided:
+   - return date
+   - number of passengers
+   - cabin class
+   - baggage
+   - maximum stops
+   - budget or preference (cheapest, fastest, best)
+
+4. NEVER invent flight data, prices, or airlines.
+   Always call the tool for real results.
+
+5. After receiving tool results:
+   - Identify:
+     • Best overall flight
+     • Cheapest flight
+     • Fastest flight
+   - Provide 3–5 strong options total.
+
+6. Format your response clearly:
+   - Airline
+   - Price
+   - Departure/arrival times
+   - Duration
+   - Stops
+   - Why it's recommended
+
+7. Be concise but helpful. Do not overwhelm the user.
+
+8. If results are limited or uncertain, say so.
+
+9. Do NOT say you are calling a tool.
+   Just behave naturally.
+
+10. Do NOT perform bookings or claim tickets are reserved.
+
+11. Today's date is {date.today().isoformat()}. When a user provides dates without a year, assume the current year ({date.today().year}).
+
+Your goal is to act like a smart travel assistant that helps users compare and choose flights.""",
+    model="gpt-4o-mini",
+    tools=[search_google_flights],
+    model_settings=ModelSettings(
+        temperature=0.2,
+        top_p=1,
+        parallel_tool_calls=True,
+        max_tokens=3001,
+        store=True,
+    ),
+)
+
+
+class WorkflowInput(BaseModel):
+    input_as_text: str
+
+
+async def run_workflow(workflow_input: WorkflowInput, history: list | None = None) -> dict:
+    with trace("New workflow"):
+        prior: list[TResponseInputItem] = history or []
+
+        new_user_message: TResponseInputItem = {
+            "role": "user",
+            "content": [{"type": "input_text", "text": workflow_input.input_as_text}],
+        }
+
+        conversation = [*prior, new_user_message]
+
+        result = await Runner.run(
+            search_flights_agent,
+            input=conversation,
+            run_config=RunConfig(
+                trace_metadata={
+                    "__trace_source__": "agent-builder",
+                    "workflow_id": "wf_69091035bc8c8190b51c94255614637d05fae5ba42c15bad",
+                }
+            ),
         )
+        for item in result.new_items:
+            LOGGER.info("Item type: %s | content: %s", type(item).__name__, item)
+
+        # Build updated history: everything sent + everything the agent produced
+        updated_history = conversation + [item.to_input_item() for item in result.new_items]
+
+        return {"output_text": result.final_output_as(str), "history": updated_history}
+
+
+def run_workflow_sync(query: str, history: list | None = None) -> tuple[str, list]:
+    try:
+        loop = asyncio.new_event_loop()
+        result = loop.run_until_complete(
+            run_workflow(WorkflowInput(input_as_text=query), history)
+        )
+        return result["output_text"], result["history"]
     except Exception as exc:
         raise FlightSearchError(f"Flight search failed: {exc}") from exc
-
-    raw_text = getattr(response, "output_text", "") or ""
-    if not raw_text:
-        for item in getattr(response, "output", []):
-            for block in getattr(item, "content", []):
-                if getattr(block, "type", "") == "output_text":
-                    raw_text = getattr(block, "text", "")
-                    break
-
-    LOGGER.info("Search response: %s", raw_text[:500])
-
-    try:
-        flights_data = _extract_json_array(raw_text)
-    except (ValueError, json.JSONDecodeError) as exc:
-        raise FlightSearchError(
-            f"Could not parse flight results: {exc}. Raw response: {raw_text[:200]}"
-        ) from exc
-
-    options: list[FlightOption] = []
-    for item in flights_data[:5]:
-        if not isinstance(item, dict):
-            continue
-        price_usd = item.get("price_usd") or item.get("price", 0)
-        try:
-            price_cents = int(float(price_usd) * 100)
-        except (ValueError, TypeError):
-            price_cents = 0
-
-        options.append(
-            FlightOption(
-                airline=item.get("airline", "Unknown"),
-                flight_number=item.get("flight_number", ""),
-                departure_time=item.get("departure_time", ""),
-                arrival_time=item.get("arrival_time", ""),
-                duration=item.get("duration", ""),
-                stops=int(item.get("stops", 0)),
-                price=price_cents,
-                currency="USD",
-                booking_url=item.get("booking_url", ""),
-                raw_data=item,
-            )
-        )
-
-    return options
-
-
-def search_flights_natural(query: str) -> tuple[FlightSearchParams, list[FlightOption]]:
-    """Top-level orchestrator: parse natural language, then search for flights."""
-    params = parse_flight_query(query)
-
-    if not params.origin_airport or not params.destination_airport or not params.departure_date:
-        raise FlightSearchError(
-            "Could not determine origin, destination, or date from your query. "
-            "Please include departure city, destination, and travel dates."
-        )
-
-    flights = search_flights(params)
-    return params, flights
+    finally:
+        loop.close()

@@ -1,227 +1,724 @@
 {% extends "base.html" %}
+{% block title %}Flights — TripHelix{% endblock %}
 
-{% block title %}Find Flights — TripHelix{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ct-bg: #07090f;
+    --ct-surface: #0d1119;
+    --ct-surface-2: #131924;
+    --ct-border: rgba(230, 165, 30, 0.15);
+    --ct-border-bright: rgba(230, 165, 30, 0.4);
+    --ct-amber: #e6a51e;
+    --ct-amber-dim: rgba(230, 165, 30, 0.08);
+    --ct-amber-glow: rgba(230, 165, 30, 0.25);
+    --ct-text: #d4c9b0;
+    --ct-text-dim: rgba(212, 201, 176, 0.45);
+    --ct-mono: 'IBM Plex Mono', monospace;
+  }
+
+  main { padding: 0 !important; }
+
+  /* ── Shell ───────────────────────────────────── */
+  .ct-shell {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 64px);
+    background: var(--ct-bg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ct-shell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(230,165,30,0.07) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ct-shell::after {
+    content: '';
+    position: absolute;
+    bottom: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 400px;
+    background: radial-gradient(ellipse at center, rgba(230,165,30,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Scrollable body ─────────────────────────── */
+  .ct-body {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+    scroll-behavior: smooth;
+  }
+
+  .ct-body::-webkit-scrollbar { width: 4px; }
+  .ct-body::-webkit-scrollbar-track { background: transparent; }
+  .ct-body::-webkit-scrollbar-thumb { background: rgba(230,165,30,0.2); border-radius: 2px; }
+
+  /* ── Welcome (shown when no history) ────────── */
+  .ct-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    padding: 2rem 1.5rem;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .ct-welcome.hidden {
+    display: none;
+  }
+
+  .ct-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: ct-rise 0.8s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+  }
+
+  .ct-icon-ring {
+    fill: none;
+    stroke: var(--ct-amber);
+    stroke-width: 1;
+    opacity: 0.4;
+    animation: ct-spin 12s linear infinite;
+    transform-origin: 32px 32px;
+  }
+
+  .ct-icon-plane { fill: var(--ct-amber); }
+
+  @keyframes ct-spin { to { transform: rotate(360deg); } }
+
+  .ct-headline {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    color: var(--ct-text);
+    text-align: center;
+    line-height: 1.15;
+    margin: 0 0 0.75rem;
+    opacity: 0;
+    animation: ct-rise 0.8s cubic-bezier(0.16,1,0.3,1) 0.25s forwards;
+  }
+
+  .ct-headline em { font-style: italic; color: var(--ct-amber); }
+
+  .ct-subhead {
+    font-family: var(--ct-mono);
+    font-size: 0.72rem;
+    font-weight: 300;
+    color: var(--ct-text-dim);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-align: center;
+    margin: 0 0 3rem;
+    opacity: 0;
+    animation: ct-rise 0.8s cubic-bezier(0.16,1,0.3,1) 0.4s forwards;
+  }
+
+  .ct-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    max-width: 640px;
+    opacity: 0;
+    animation: ct-rise 0.8s cubic-bezier(0.16,1,0.3,1) 0.55s forwards;
+  }
+
+  .ct-chip {
+    font-family: var(--ct-mono);
+    font-size: 0.7rem;
+    color: var(--ct-text-dim);
+    background: transparent;
+    border: 1px solid var(--ct-border);
+    border-radius: 2px;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+    letter-spacing: 0.04em;
+  }
+
+  .ct-chip:hover, .ct-chip--active {
+    color: var(--ct-amber);
+    border-color: var(--ct-border-bright);
+    background: var(--ct-amber-dim);
+  }
+
+  /* ── Conversation thread ─────────────────────── */
+  .ct-thread {
+    max-width: 760px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 1rem;
+  }
+
+  .ct-thread.hidden { display: none; }
+
+  /* User bubble */
+  .ct-user-msg {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+    animation: ct-rise 0.45s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+
+  .ct-user-bubble {
+    max-width: 68%;
+    background: linear-gradient(135deg, #b87e10 0%, #e6a51e 100%);
+    border-radius: 14px 14px 2px 14px;
+    padding: 0.8rem 1.1rem;
+  }
+
+  .ct-user-label {
+    font-family: var(--ct-mono);
+    font-size: 0.58rem;
+    font-weight: 500;
+    color: rgba(7,9,15,0.55);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+
+  .ct-user-text {
+    font-family: var(--ct-mono);
+    font-size: 0.82rem;
+    color: #07090f;
+    line-height: 1.5;
+  }
+
+  /* Agent bubble */
+  .ct-agent-msg {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    animation: ct-rise 0.55s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+
+  .ct-agent-avatar {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    margin-top: 4px;
+    background: var(--ct-surface-2);
+    border: 1px solid var(--ct-border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ct-amber);
+  }
+
+  .ct-agent-bubble {
+    flex: 1;
+    background: var(--ct-surface);
+    border: 1px solid var(--ct-border);
+    border-radius: 2px 14px 14px 14px;
+    padding: 1rem 1.25rem;
+    position: relative;
+  }
+
+  .ct-agent-bubble::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--ct-amber) 0%, transparent 60%);
+    border-radius: 2px 14px 0 0;
+  }
+
+  .ct-agent-label {
+    font-family: var(--ct-mono);
+    font-size: 0.58rem;
+    font-weight: 500;
+    color: var(--ct-amber);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.6rem;
+    opacity: 0.7;
+  }
+
+  .ct-agent-content {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.72;
+    color: var(--ct-text);
+  }
+
+  .ct-agent-content p { margin: 0 0 0.85em; }
+  .ct-agent-content p:last-child { margin-bottom: 0; }
+  .ct-agent-content strong { color: #e8d9b8; font-weight: 600; }
+
+  /* Typing indicator */
+  .ct-typing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.3rem 0;
+  }
+
+  .ct-typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ct-amber);
+    opacity: 0.4;
+    animation: ct-dot 1.2s ease-in-out infinite;
+  }
+
+  .ct-typing span:nth-child(2) { animation-delay: 0.2s; }
+  .ct-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes ct-dot {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ── Input bar ───────────────────────────────── */
+  .ct-inputbar {
+    position: relative;
+    z-index: 2;
+    padding: 0.75rem 1.5rem 1.25rem;
+    background: linear-gradient(to top, var(--ct-bg) 60%, transparent);
+  }
+
+  .ct-inputbar-inner {
+    max-width: 680px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--ct-border);
+    border-radius: 3px;
+    background: var(--ct-surface);
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+
+  .ct-inputbar-inner:focus-within {
+    border-color: var(--ct-border-bright);
+    box-shadow: 0 0 0 3px var(--ct-amber-glow), 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  .ct-input-prefix {
+    font-family: var(--ct-mono);
+    font-size: 0.75rem;
+    color: var(--ct-amber);
+    padding: 0 0 0 1.1rem;
+    opacity: 0.7;
+    white-space: nowrap;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .ct-input {
+    flex: 1;
+    font-family: var(--ct-mono);
+    font-size: 0.85rem;
+    color: var(--ct-text);
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0.9rem 0.75rem;
+    caret-color: var(--ct-amber);
+  }
+
+  .ct-input::placeholder {
+    color: rgba(212,201,176,0.28);
+    font-style: italic;
+  }
+
+  .ct-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .ct-send-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    margin: 4px;
+    background: var(--ct-amber);
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    color: #07090f;
+  }
+
+  .ct-send-btn:hover { background: #f5b830; transform: scale(1.05); }
+  .ct-send-btn:active { transform: scale(0.97); }
+  .ct-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .ct-send-btn svg { display: block; }
+
+  .ct-hint {
+    font-family: var(--ct-mono);
+    font-size: 0.62rem;
+    color: var(--ct-text-dim);
+    text-align: center;
+    margin-top: 0.5rem;
+    letter-spacing: 0.06em;
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ── Loading overlay ─────────────────────────── */
+  .ct-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(7,9,15,0.94);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(4px);
+  }
+
+  .ct-loading.active { opacity: 1; pointer-events: all; }
+
+  .ct-loading-box { text-align: center; max-width: 320px; }
+
+  .ct-loading-radar {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 1.5rem;
+    position: relative;
+  }
+
+  .ct-radar-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--ct-border);
+    animation: ct-pulse-ring 2s ease-out infinite;
+  }
+
+  .ct-radar-ring:nth-child(2) { animation-delay: 0.6s; }
+  .ct-radar-ring:nth-child(3) { animation-delay: 1.2s; }
+
+  @keyframes ct-pulse-ring {
+    0%   { transform: scale(0.3); opacity: 0.8; }
+    100% { transform: scale(1);   opacity: 0; }
+  }
+
+  .ct-radar-center {
+    position: absolute;
+    inset: 50%;
+    width: 6px;
+    height: 6px;
+    margin: -3px;
+    border-radius: 50%;
+    background: var(--ct-amber);
+    box-shadow: 0 0 12px var(--ct-amber);
+  }
+
+  .ct-loading-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--ct-text);
+    margin: 0 0 0.4rem;
+  }
+
+  .ct-loading-sub {
+    font-family: var(--ct-mono);
+    font-size: 0.68rem;
+    color: var(--ct-text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    animation: ct-blink 1.2s step-end infinite;
+  }
+
+  @keyframes ct-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  @keyframes ct-rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<!-- Flight search hero -->
-<section class="flights-hero" aria-labelledby="flights-hero-heading">
-    <div class="flights-hero-inner">
-        <div class="flights-hero-text">
-            <p class="flights-hero-eyebrow">
-                <span class="flights-hero-eyebrow-dot" aria-hidden="true"></span>
-                AI-Powered Flight Search
-            </p>
-            <h1 class="flights-hero-title" id="flights-hero-heading">
-                Tell us where you want to go.<br>
-                <em>We'll find the best deals.</em>
-            </h1>
-            <p class="flights-hero-subtitle">
-                Describe your trip in plain English — destination, dates, budget, preferences.
-                Our AI searches across sources and ranks results by real value, not hidden fees.
-            </p>
-        </div>
+<div class="ct-shell">
+
+  <!-- Scrollable body -->
+  <div class="ct-body" id="ct-body">
+
+    <!-- Welcome screen (hidden once conversation starts) -->
+    <div class="ct-welcome {% if display_history %}hidden{% endif %}" id="ct-welcome">
+      <svg class="ct-icon" viewBox="0 0 64 64" aria-hidden="true">
+        <circle class="ct-icon-ring" cx="32" cy="32" r="28" stroke-dasharray="4 6"/>
+        <path class="ct-icon-plane" d="M32 14 L40 34 L32 30 L24 34 Z"/>
+        <path class="ct-icon-plane" opacity="0.5" d="M27 34 L29 40 L32 38 L35 40 L37 34"/>
+      </svg>
+      <h1 class="ct-headline">Where are you<br><em>flying next?</em></h1>
+      <p class="ct-subhead">describe your trip in plain language</p>
+      <div class="ct-chips" aria-label="Example searches">
+        <button class="ct-chip" type="button" data-q="Nonstop JFK to LAX, May 10 returning May 17, under $500">JFK → LAX, May 10–17</button>
+        <button class="ct-chip" type="button" data-q="Cheapest flight Chicago to London in June, any airline under $700">Chicago → London, June</button>
+        <button class="ct-chip" type="button" data-q="Weekend NYC to Miami April 5–7, carry-on only, budget $300">NYC → Miami weekend</button>
+        <button class="ct-chip" type="button" data-q="Fastest Boston to San Francisco March 28, business class">BOS → SFO fastest</button>
+      </div>
     </div>
-</section>
 
-<!-- Search form card -->
-<div class="flights-search-card">
+    <!-- Conversation thread -->
+    <div class="ct-thread {% if not display_history %}hidden{% endif %}" id="ct-thread">
+      {% for msg in display_history %}
+        {% if msg.role == "user" %}
+        <div class="ct-user-msg">
+          <div class="ct-user-bubble">
+            <span class="ct-user-label">You</span>
+            <span class="ct-user-text">{{ msg.text }}</span>
+          </div>
+        </div>
+        {% else %}
+        <div class="ct-agent-msg">
+          <div class="ct-agent-avatar" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+          </div>
+          <div class="ct-agent-bubble">
+            <span class="ct-agent-label">TripHelix Agent</span>
+            <div class="ct-agent-content">
+              {% if msg.is_tool_call %}
+                <em style="color:var(--ct-text-dim)">Scanning routes…</em>
+              {% else %}
+                {{ msg.text|linebreaks }}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
 
-    {% if error %}
-    <div class="flights-error" role="alert" aria-live="polite">
-        <svg class="flights-error-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+  </div>
+
+  <!-- Input bar -->
+  <div class="ct-inputbar">
+    <div class="ct-inputbar-inner">
+      <span class="ct-input-prefix" aria-hidden="true">›</span>
+      <label for="ct-input" class="sr-only">Describe your flight</label>
+      <input
+        type="text"
+        id="ct-input"
+        name="query"
+        placeholder="e.g. Nonstop NYC to Paris, June 3, returning June 10, economy"
+        autocomplete="off"
+        autofocus
+        class="ct-input"
+      >
+      <button type="button" id="ct-send" class="ct-send-btn" aria-label="Search flights">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
         </svg>
-        <span>{{ error }}</span>
+      </button>
     </div>
-    {% endif %}
+    <p class="ct-hint">Press Enter or click send — no form fields required</p>
+  </div>
 
-    <form method="post" action="{% url 'flights:search' %}" id="flight-search-form" novalidate>
-        {% csrf_token %}
-        <div class="flights-input-row">
-            <label for="flight-query" class="sr-only">Describe your flight</label>
-            <input
-                type="text"
-                id="flight-query"
-                name="query"
-                value="{{ query|default:'' }}"
-                placeholder='e.g. "Nonstop NYC to Miami, April 5–7, under $300"'
-                autofocus
-                required
-                autocomplete="off"
-                aria-describedby="flights-input-hint"
-                class="flights-query-input"
-            >
-            <button type="submit" class="btn btn-primary flights-submit-btn" aria-label="Search for flights">
-                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                Search Flights
-            </button>
-        </div>
-        <p id="flights-input-hint" class="flights-input-hint">
-            Include destination, travel dates, budget, stops preference, or airline — any combination works.
-        </p>
-    </form>
-
-    <!-- Example query chips -->
-    <div class="flights-chips-section" aria-label="Example searches">
-        <span class="flights-chips-label" aria-hidden="true">Try an example:</span>
-        <div class="flights-chips" role="list">
-            <button type="button" class="flights-chip" role="listitem"
-                data-query="Nonstop JFK to LAX, May 10 return May 17, under $500"
-                aria-label="Try: Nonstop JFK to LAX, May 10 return May 17, under $500">
-                Nonstop JFK to LAX, May 10–17
-            </button>
-            <button type="button" class="flights-chip" role="listitem"
-                data-query="Cheapest flight Chicago to London under $700 in June, any airline"
-                aria-label="Try: Cheapest flight Chicago to London under $700 in June">
-                Chicago to London under $700, June
-            </button>
-            <button type="button" class="flights-chip" role="listitem"
-                data-query="Weekend trip NYC to Miami April 5–7, carry-on only, budget under $300"
-                aria-label="Try: Weekend trip NYC to Miami April 5–7, carry-on only">
-                NYC to Miami weekend, April 5–7
-            </button>
-            <button type="button" class="flights-chip" role="listitem"
-                data-query="Fastest flight Boston to San Francisco on March 28, business class"
-                aria-label="Try: Fastest flight Boston to San Francisco, business class">
-                Boston to SFO, fastest option
-            </button>
-            <button type="button" class="flights-chip" role="listitem"
-                data-query="Family trip Dallas to Orlando, July 4–11, 2 adults 2 kids, checked bags included"
-                aria-label="Try: Family trip Dallas to Orlando, July 4–11">
-                Dallas to Orlando, family of 4
-            </button>
-        </div>
-    </div>
 </div>
 
-<!-- How it works -->
-<section class="flights-how" aria-labelledby="flights-how-heading">
-    <h2 class="section-title" id="flights-how-heading">How it works</h2>
-    <div class="flights-how-steps">
-
-        <div class="flights-how-step">
-            <div class="flights-how-step-num" aria-hidden="true">1</div>
-            <div class="flights-how-step-body">
-                <h3 class="flights-how-step-title">Describe your trip</h3>
-                <p class="flights-how-step-desc">
-                    Write naturally: destination, dates, budget, stop preferences, airline,
-                    or baggage needs. No forms to fill — just plain English.
-                </p>
-            </div>
-        </div>
-
-        <div class="flights-how-connector" aria-hidden="true"></div>
-
-        <div class="flights-how-step">
-            <div class="flights-how-step-num" aria-hidden="true">2</div>
-            <div class="flights-how-step-body">
-                <h3 class="flights-how-step-title">AI searches &amp; ranks</h3>
-                <p class="flights-how-step-desc">
-                    Our AI parses your preferences and scores every option on price,
-                    duration, stops, and value — surfacing the best deals at the top.
-                </p>
-            </div>
-        </div>
-
-        <div class="flights-how-connector" aria-hidden="true"></div>
-
-        <div class="flights-how-step">
-            <div class="flights-how-step-num" aria-hidden="true">3</div>
-            <div class="flights-how-step-body">
-                <h3 class="flights-how-step-title">Compare &amp; book</h3>
-                <p class="flights-how-step-desc">
-                    Review the top picks side-by-side, filter by stops or price,
-                    and book directly through the airline or booking platform.
-                </p>
-            </div>
-        </div>
-
+<!-- Loading overlay (only shown when agent calls search_google_flights) -->
+<div class="ct-loading" id="ct-loading" aria-live="polite" role="status" aria-label="Searching for flights">
+  <div class="ct-loading-box">
+    <div class="ct-loading-radar">
+      <div class="ct-radar-ring"></div>
+      <div class="ct-radar-ring"></div>
+      <div class="ct-radar-ring"></div>
+      <div class="ct-radar-center"></div>
     </div>
-</section>
-
-<!-- Loading overlay shown on submit -->
-<div class="loading-overlay" id="flights-loading" aria-live="polite" aria-label="Searching for flights" role="status" hidden>
-    <div class="loading-box">
-        <span class="loading-icon" aria-hidden="true">&#9992;&#65039;</span>
-        <h2 class="loading-heading">Finding the best deals</h2>
-        <p>Our AI is scanning options and ranking them for you&hellip;</p>
-        <div class="loading-steps" aria-hidden="true">
-            <div class="loading-step active" id="ls-1">
-                <span class="loading-step-dot"></span>
-                Parsing your preferences
-            </div>
-            <div class="loading-step" id="ls-2">
-                <span class="loading-step-dot"></span>
-                Searching available flights
-            </div>
-            <div class="loading-step" id="ls-3">
-                <span class="loading-step-dot"></span>
-                Scoring and ranking results
-            </div>
-        </div>
-        <div class="progress-track" aria-hidden="true">
-            <div class="progress-bar-fill"></div>
-        </div>
-    </div>
+    <p class="ct-loading-title">Scanning routes</p>
+    <p class="ct-loading-sub">Agent is searching&hellip;</p>
+  </div>
 </div>
 
 <script>
 (function () {
-    // Chip click fills the search input
-    var chips = document.querySelectorAll('.flights-chip');
-    var input = document.getElementById('flight-query');
-    chips.forEach(function (chip) {
-        chip.addEventListener('click', function () {
-            if (input) {
-                input.value = chip.dataset.query || chip.textContent.trim();
-                input.focus();
-                // Visual feedback
-                chips.forEach(function (c) { c.classList.remove('flights-chip--active'); });
-                chip.classList.add('flights-chip--active');
-            }
-        });
-        chip.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                chip.click();
-            }
-        });
+  var input   = document.getElementById('ct-input');
+  var sendBtn = document.getElementById('ct-send');
+  var body    = document.getElementById('ct-body');
+  var thread  = document.getElementById('ct-thread');
+  var welcome = document.getElementById('ct-welcome');
+  var loading = document.getElementById('ct-loading');
+
+  // Pre-fill input from chip clicks
+  document.querySelectorAll('.ct-chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      input.value = chip.dataset.q || chip.textContent.trim();
+      document.querySelectorAll('.ct-chip').forEach(function (c) { c.classList.remove('ct-chip--active'); });
+      chip.classList.add('ct-chip--active');
+      input.focus();
     });
+  });
 
-    // Show loading overlay on form submit
-    var form = document.getElementById('flight-search-form');
-    var overlay = document.getElementById('flights-loading');
-    if (form && overlay) {
-        form.addEventListener('submit', function () {
-            // Only show if the input has a value (HTML validation passed)
-            var val = input ? input.value.trim() : '';
-            if (!val) return;
+  // Scroll thread to bottom
+  function scrollBottom() {
+    body.scrollTop = body.scrollHeight;
+  }
 
-            overlay.removeAttribute('hidden');
-            overlay.classList.add('active');
+  // Escape HTML to safely inject user text
+  function esc(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
-            // Animate loading steps sequentially
-            var steps = [
-                document.getElementById('ls-1'),
-                document.getElementById('ls-2'),
-                document.getElementById('ls-3')
-            ];
-            var delays = [0, 1200, 2400];
-            steps.forEach(function (step, i) {
-                if (!step) return;
-                setTimeout(function () {
-                    steps.forEach(function (s) { if (s) s.classList.remove('active'); });
-                    if (i > 0 && steps[i - 1]) steps[i - 1].classList.add('done');
-                    step.classList.add('active');
-                }, delays[i]);
-            });
-        });
+  // Append user bubble
+  function appendUser(text) {
+    var div = document.createElement('div');
+    div.className = 'ct-user-msg';
+    div.innerHTML =
+      '<div class="ct-user-bubble">' +
+        '<span class="ct-user-label">You</span>' +
+        '<span class="ct-user-text">' + esc(text) + '</span>' +
+      '</div>';
+    thread.appendChild(div);
+    scrollBottom();
+  }
+
+  // Append typing indicator, returns the element so we can remove it
+  function appendTyping() {
+    var div = document.createElement('div');
+    div.className = 'ct-agent-msg';
+    div.id = 'ct-typing-indicator';
+    div.innerHTML =
+      '<div class="ct-agent-avatar" aria-hidden="true">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>' +
+      '</div>' +
+      '<div class="ct-agent-bubble">' +
+        '<span class="ct-agent-label">TripHelix Agent</span>' +
+        '<div class="ct-typing"><span></span><span></span><span></span></div>' +
+      '</div>';
+    thread.appendChild(div);
+    scrollBottom();
+    return div;
+  }
+
+  // Remove typing indicator
+  function removeTyping() {
+    var el = document.getElementById('ct-typing-indicator');
+    if (el) el.remove();
+  }
+
+  // Convert plain text with newlines to simple HTML paragraphs
+  function textToHtml(text) {
+    return text.split(/\n\n+/).map(function (para) {
+      return '<p>' + esc(para.replace(/\n/g, '<br>')) + '</p>';
+    }).join('');
+  }
+
+  // Append agent bubble
+  function appendAgent(text) {
+    var div = document.createElement('div');
+    div.className = 'ct-agent-msg';
+    div.innerHTML =
+      '<div class="ct-agent-avatar" aria-hidden="true">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>' +
+      '</div>' +
+      '<div class="ct-agent-bubble">' +
+        '<span class="ct-agent-label">TripHelix Agent</span>' +
+        '<div class="ct-agent-content">' + textToHtml(text) + '</div>' +
+      '</div>';
+    thread.appendChild(div);
+    scrollBottom();
+  }
+
+  // Switch from welcome to thread view
+  function showThread() {
+    if (!welcome.classList.contains('hidden')) {
+      welcome.classList.add('hidden');
+      thread.classList.remove('hidden');
     }
+  }
+
+  // CSRF token from cookie
+  function getCsrf() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+  }
+
+  // Main send handler
+  function sendMessage() {
+    var text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    input.disabled = true;
+    sendBtn.disabled = true;
+
+    showThread();
+    appendUser(text);
+    appendTyping();
+
+    var formData = new FormData();
+    formData.append('query', text);
+    formData.append('csrfmiddlewaretoken', getCsrf());
+
+    fetch(window.location.pathname, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: formData,
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      removeTyping();
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+
+      if (data.error) {
+        appendAgent('Error: ' + data.error);
+        return;
+      }
+
+      if (data.is_tool_call) {
+        // Show loading overlay — agent is now searching flights
+        loading.classList.add('active');
+      } else {
+        appendAgent(data.text);
+      }
+    })
+    .catch(function () {
+      removeTyping();
+      input.disabled = false;
+      sendBtn.disabled = false;
+      appendAgent('Something went wrong. Please try again.');
+    });
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Scroll to bottom on initial load if there's existing history
+  if (!thread.classList.contains('hidden')) {
+    scrollBottom();
+  }
 })();
 </script>
 {% endblock %}

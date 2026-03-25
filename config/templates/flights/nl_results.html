@@ -1,126 +1,699 @@
 {% extends "base.html" %}
+{% block title %}Flight Results — TripHelix{% endblock %}
 
-{% block title %}Flight Results · TripHelix{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ct-bg: #07090f;
+    --ct-surface: #0d1119;
+    --ct-surface-2: #131924;
+    --ct-border: rgba(230, 165, 30, 0.15);
+    --ct-border-bright: rgba(230, 165, 30, 0.4);
+    --ct-amber: #e6a51e;
+    --ct-amber-dim: rgba(230, 165, 30, 0.08);
+    --ct-amber-glow: rgba(230, 165, 30, 0.22);
+    --ct-text: #d4c9b0;
+    --ct-text-dim: rgba(212, 201, 176, 0.45);
+    --ct-mono: 'IBM Plex Mono', monospace;
+  }
+
+  main { padding: 0 !important; }
+
+  /* ── Shell ──────────────────────────────────── */
+  .ctr-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 64px);
+    background: var(--ct-bg);
+    position: relative;
+  }
+
+  .ctr-shell::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(230,165,30,0.07) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Conversation thread ────────────────────── */
+  .ctr-thread {
+    flex: 1;
+    max-width: 760px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 1rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Route header */
+  .ctr-route-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+    opacity: 0;
+    animation: ctr-rise 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s forwards;
+  }
+
+  .ctr-route-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background: var(--ct-amber-dim);
+    border: 1px solid var(--ct-border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ct-amber);
+  }
+
+  .ctr-route-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .ctr-route-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ct-text);
+    letter-spacing: 0.01em;
+  }
+
+  .ctr-route-date {
+    font-family: var(--ct-mono);
+    font-size: 0.62rem;
+    color: var(--ct-text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── User bubble ────────────────────────────── */
+  .ctr-user-msg {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: ctr-rise 0.55s cubic-bezier(0.16,1,0.3,1) 0.15s forwards;
+  }
+
+  .ctr-user-bubble {
+    max-width: 68%;
+    background: linear-gradient(135deg, #b87e10 0%, #e6a51e 100%);
+    border-radius: 14px 14px 2px 14px;
+    padding: 0.8rem 1.1rem;
+    position: relative;
+  }
+
+  .ctr-user-label {
+    font-family: var(--ct-mono);
+    font-size: 0.58rem;
+    font-weight: 500;
+    color: rgba(7, 9, 15, 0.55);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+
+  .ctr-user-text {
+    font-family: var(--ct-mono);
+    font-size: 0.82rem;
+    color: #07090f;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  /* ── Agent bubble ───────────────────────────── */
+  .ctr-agent-msg {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: ctr-rise 0.65s cubic-bezier(0.16,1,0.3,1) 0.35s forwards;
+  }
+
+  .ctr-agent-avatar {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    margin-top: 4px;
+    background: var(--ct-surface-2);
+    border: 1px solid var(--ct-border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ct-amber);
+  }
+
+  .ctr-agent-bubble {
+    flex: 1;
+    background: var(--ct-surface);
+    border: 1px solid var(--ct-border);
+    border-radius: 2px 14px 14px 14px;
+    padding: 1rem 1.25rem;
+    position: relative;
+  }
+
+  /* Subtle amber top border on agent bubble */
+  .ctr-agent-bubble::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--ct-amber) 0%, transparent 60%);
+    border-radius: 2px 14px 0 0;
+  }
+
+  .ctr-agent-label {
+    font-family: var(--ct-mono);
+    font-size: 0.58rem;
+    font-weight: 500;
+    color: var(--ct-amber);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.6rem;
+    opacity: 0.7;
+  }
+
+  /* Agent response text formatting */
+  .ctr-agent-content {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.72;
+    color: var(--ct-text);
+  }
+
+  .ctr-agent-content p { margin: 0 0 0.85em; }
+  .ctr-agent-content p:last-child { margin-bottom: 0; }
+
+  .ctr-agent-content strong {
+    color: #e8d9b8;
+    font-weight: 600;
+  }
+
+  .ctr-agent-content em { color: rgba(212, 201, 176, 0.8); font-style: italic; }
+
+  .ctr-agent-content h1,
+  .ctr-agent-content h2,
+  .ctr-agent-content h3 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 600;
+    color: #e8d9b8;
+    margin: 1em 0 0.4em;
+    line-height: 1.3;
+  }
+  .ctr-agent-content h1 { font-size: 1.2rem; }
+  .ctr-agent-content h2 { font-size: 1.05rem; }
+  .ctr-agent-content h3 { font-size: 0.95rem; }
+
+  .ctr-agent-content ul,
+  .ctr-agent-content ol {
+    margin: 0 0 0.85em 1.1em;
+    padding: 0;
+  }
+  .ctr-agent-content li { margin-bottom: 0.25em; }
+  .ctr-agent-content li::marker { color: var(--ct-amber); opacity: 0.7; }
+
+  .ctr-agent-content hr {
+    border: none;
+    border-top: 1px solid var(--ct-border);
+    margin: 1em 0;
+  }
+
+  .ctr-agent-content code {
+    font-family: var(--ct-mono);
+    font-size: 0.82em;
+    background: rgba(230, 165, 30, 0.08);
+    color: var(--ct-amber);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    border: 1px solid var(--ct-border);
+  }
+
+  .ctr-agent-content pre {
+    background: var(--ct-surface-2);
+    border: 1px solid var(--ct-border);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    margin: 0 0 0.85em;
+  }
+  .ctr-agent-content pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.8rem;
+    color: var(--ct-text);
+  }
+
+  .ctr-agent-content blockquote {
+    margin: 0 0 0.85em;
+    padding: 0.5em 1em;
+    border-left: 2px solid var(--ct-amber);
+    background: var(--ct-amber-dim);
+    color: rgba(212, 201, 176, 0.75);
+    font-style: italic;
+  }
+
+  .ctr-agent-content a {
+    color: var(--ct-amber);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .ctr-agent-content br + br { display: none; }
+
+  /* ── Saved search results (DB-backed) ───────── */
+  .ctr-flight-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .ctr-flight-card {
+    background: var(--ct-surface-2);
+    border: 1px solid var(--ct-border);
+    border-radius: 4px;
+    padding: 0.9rem 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    transition: border-color 0.2s;
+  }
+
+  .ctr-flight-card:hover {
+    border-color: var(--ct-border-bright);
+  }
+
+  .ctr-flight-airline {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ct-text);
+  }
+
+  .ctr-flight-number {
+    font-family: var(--ct-mono);
+    font-size: 0.65rem;
+    color: var(--ct-text-dim);
+    margin-left: 0.4rem;
+  }
+
+  .ctr-flight-times {
+    font-family: var(--ct-mono);
+    font-size: 0.75rem;
+    color: var(--ct-text);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .ctr-flight-arrow { color: var(--ct-amber); opacity: 0.6; }
+
+  .ctr-flight-meta {
+    font-family: var(--ct-mono);
+    font-size: 0.65rem;
+    color: var(--ct-text-dim);
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .ctr-flight-price {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--ct-amber);
+    white-space: nowrap;
+  }
+
+  .ctr-book-link {
+    font-family: var(--ct-mono);
+    font-size: 0.65rem;
+    color: var(--ct-amber);
+    text-decoration: none;
+    border: 1px solid var(--ct-border);
+    padding: 0.2rem 0.5rem;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+
+  .ctr-book-link:hover { background: var(--ct-amber-dim); }
+
+  /* ── Empty state ────────────────────────────── */
+  .ctr-empty {
+    font-family: var(--ct-mono);
+    font-size: 0.75rem;
+    color: var(--ct-text-dim);
+    text-align: center;
+    padding: 2rem;
+    border: 1px dashed var(--ct-border);
+    border-radius: 4px;
+    margin-top: 0.5rem;
+  }
+
+  /* ── New search footer ──────────────────────── */
+  .ctr-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    padding: 0.75rem 1.5rem 1.25rem;
+    background: linear-gradient(to top, var(--ct-bg) 70%, transparent);
+  }
+
+  .ctr-footer-inner {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .ctr-footer-link {
+    font-family: var(--ct-mono);
+    font-size: 0.7rem;
+    color: var(--ct-text-dim);
+    text-decoration: none;
+    white-space: nowrap;
+    border: 1px solid var(--ct-border);
+    border-radius: 2px;
+    padding: 0.45rem 0.75rem;
+    transition: color 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .ctr-footer-link:hover {
+    color: var(--ct-amber);
+    border-color: var(--ct-border-bright);
+  }
+
+  .ctr-new-search-form {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--ct-border);
+    border-radius: 3px;
+    background: var(--ct-surface);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .ctr-new-search-form:focus-within {
+    border-color: var(--ct-border-bright);
+    box-shadow: 0 0 0 3px var(--ct-amber-glow);
+  }
+
+  .ctr-new-prefix {
+    font-family: var(--ct-mono);
+    font-size: 0.7rem;
+    color: var(--ct-amber);
+    padding: 0 0 0 0.9rem;
+    opacity: 0.6;
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .ctr-new-input {
+    flex: 1;
+    font-family: var(--ct-mono);
+    font-size: 0.78rem;
+    color: var(--ct-text);
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0.7rem 0.65rem;
+    caret-color: var(--ct-amber);
+  }
+
+  .ctr-new-input::placeholder {
+    color: rgba(212, 201, 176, 0.25);
+    font-style: italic;
+  }
+
+  .ctr-new-send {
+    width: 36px;
+    height: 36px;
+    margin: 3px;
+    background: var(--ct-surface-2);
+    border: 1px solid var(--ct-border);
+    border-radius: 2px;
+    color: var(--ct-amber);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .ctr-new-send:hover { background: var(--ct-amber-dim); }
+
+  /* ── Loading overlay ────────────────────────── */
+  .ct-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(7, 9, 15, 0.94);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(4px);
+  }
+
+  .ct-loading.active { opacity: 1; pointer-events: all; }
+
+  .ct-loading-box { text-align: center; }
+
+  .ct-loading-radar {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1.25rem;
+    position: relative;
+  }
+
+  .ct-radar-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--ct-border);
+    animation: ctr-pulse 2s ease-out infinite;
+  }
+
+  .ct-radar-ring:nth-child(2) { animation-delay: 0.65s; }
+  .ct-radar-ring:nth-child(3) { animation-delay: 1.3s; }
+
+  @keyframes ctr-pulse {
+    0%   { transform: scale(0.3); opacity: 0.8; }
+    100% { transform: scale(1);   opacity: 0; }
+  }
+
+  .ct-radar-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 6px; height: 6px;
+    margin: -3px;
+    border-radius: 50%;
+    background: var(--ct-amber);
+    box-shadow: 0 0 12px var(--ct-amber);
+  }
+
+  .ct-loading-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: var(--ct-text);
+    margin: 0 0 0.3rem;
+  }
+
+  .ct-loading-sub {
+    font-family: var(--ct-mono);
+    font-size: 0.65rem;
+    color: var(--ct-text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    animation: ctr-blink 1.2s step-end infinite;
+  }
+
+  @keyframes ctr-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  @keyframes ctr-rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <div>
-        {% if search %}
-            <h2>{{ search.origin_airport }} &rarr; {{ search.destination_airport }}</h2>
-            <p class="trip-dates">
-                {{ search.departure_date|date:"M d, Y" }}
-                {% if search.return_date %} &mdash; {{ search.return_date|date:"M d, Y" }}{% endif %}
-            </p>
-            <p>
-                <strong>{{ search.passengers }} passenger{{ search.passengers|pluralize }}</strong>
-                &middot; {{ search.cabin_class|capfirst }}
-            </p>
-        {% elif params %}
-            <h2>{{ params.origin_airport }} &rarr; {{ params.destination_airport }}</h2>
-            <p class="trip-dates">
-                {{ params.departure_date }}
-                {% if params.return_date %} &mdash; {{ params.return_date }}{% endif %}
-            </p>
-            <p>
-                <strong>{{ params.passengers }} passenger{{ params.passengers|pluralize }}</strong>
-                &middot; {{ params.cabin_class|capfirst }}
-            </p>
+<div class="ctr-shell">
+
+  <div class="ctr-thread">
+
+    <!-- Session-based conversation history -->
+    {% if display_history %}
+      {% for msg in display_history %}
+        {% if msg.role == "user" %}
+        <div class="ctr-user-msg">
+          <div class="ctr-user-bubble">
+            <span class="ctr-user-label">You</span>
+            <span class="ctr-user-text">{{ msg.text }}</span>
+          </div>
+        </div>
+        {% else %}
+        <div class="ctr-agent-msg">
+          <div class="ctr-agent-avatar" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+          </div>
+          <div class="ctr-agent-bubble">
+            <span class="ctr-agent-label">TripHelix Agent</span>
+            <div class="ctr-agent-content ctr-md" data-md="{{ msg.text|escapejs }}"></div>
+          </div>
+        </div>
         {% endif %}
+      {% endfor %}
 
-        {% if price_change %}
-            <p class="price-change price-{{ price_change.direction }}">
-                {% if price_change.direction == "down" %}
-                    Price dropped ${{ price_change.amount|floatformat:0 }} since last search
-                {% else %}
-                    Price increased ${{ price_change.amount|floatformat:0 }} since last search
-                {% endif %}
-            </p>
-        {% endif %}
+    <!-- DB-backed saved search (detail view) -->
+    {% elif search %}
+    <div class="ctr-user-msg">
+      <div class="ctr-user-bubble">
+        <span class="ctr-user-label">You</span>
+        <span class="ctr-user-text">{{ search.natural_query }}</span>
+      </div>
     </div>
-    <div>
-        <p><strong>Actions</strong></p>
-        <ul>
-            <li><a href="{% url 'flights:search' %}">Search again</a></li>
-            <li><a href="{% url 'core:home' %}">Back to dashboard</a></li>
-        </ul>
+    <div class="ctr-agent-msg">
+      <div class="ctr-agent-avatar" aria-hidden="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+      </div>
+      <div class="ctr-agent-bubble">
+        <span class="ctr-agent-label">TripHelix Agent</span>
+        <div class="ctr-flight-list">
+          {% for flight in results %}
+          <div class="ctr-flight-card">
+            <div>
+              <div>
+                <span class="ctr-flight-airline">{{ flight.airline }}</span>
+                {% if flight.flight_number %}<span class="ctr-flight-number">{{ flight.flight_number }}</span>{% endif %}
+              </div>
+              <div class="ctr-flight-times" style="margin-top:0.35rem">
+                <span>{{ flight.departure_time }}</span>
+                <span class="ctr-flight-arrow">→</span>
+                <span>{{ flight.arrival_time }}</span>
+              </div>
+              <div class="ctr-flight-meta" style="margin-top:0.3rem">
+                <span>{{ flight.duration }}</span>
+                <span>{% if flight.stops == 0 %}Nonstop{% elif flight.stops == 1 %}1 stop{% else %}{{ flight.stops }} stops{% endif %}</span>
+              </div>
+            </div>
+            <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">
+              <span class="ctr-flight-price">{{ flight.price_display }}</span>
+              {% if flight.booking_url %}<a href="{{ flight.booking_url }}" target="_blank" rel="noopener" class="ctr-book-link">Book →</a>{% endif %}
+            </div>
+          </div>
+          {% empty %}
+          <div class="ctr-empty">No flights found for this route. Try adjusting your search.</div>
+          {% endfor %}
+        </div>
+      </div>
     </div>
-</section>
+    {% endif %}
 
-{% if results or flights %}
-<section>
-    <h3 class="section-title">Top flight options</h3>
-    <div class="flight-results-list">
-        {% for flight in results %}
-            <article class="flight-card">
-                <div class="flight-card-main">
-                    <div class="flight-airline">
-                        <strong>{{ flight.airline }}</strong>
-                        {% if flight.flight_number %}
-                            <span class="flight-number">{{ flight.flight_number }}</span>
-                        {% endif %}
-                    </div>
-                    <div class="flight-times">
-                        <span class="flight-depart">{{ flight.departure_time }}</span>
-                        <span class="flight-arrow">&rarr;</span>
-                        <span class="flight-arrive">{{ flight.arrival_time }}</span>
-                    </div>
-                    <div class="flight-meta-info">
-                        <span>{{ flight.duration }}</span>
-                        <span class="flight-stops">
-                            {% if flight.stops == 0 %}Nonstop{% elif flight.stops == 1 %}1 stop{% else %}{{ flight.stops }} stops{% endif %}
-                        </span>
-                    </div>
-                </div>
-                <div class="flight-card-price">
-                    <span class="flight-price">{{ flight.price_display }}</span>
-                    {% if flight.booking_url %}
-                        <a href="{{ flight.booking_url }}" target="_blank" rel="noopener" class="flight-book-link">Book</a>
-                    {% endif %}
-                </div>
-            </article>
-        {% endfor %}
-        {% for flight in flights %}
-            <article class="flight-card">
-                <div class="flight-card-main">
-                    <div class="flight-airline">
-                        <strong>{{ flight.airline }}</strong>
-                        {% if flight.flight_number %}
-                            <span class="flight-number">{{ flight.flight_number }}</span>
-                        {% endif %}
-                    </div>
-                    <div class="flight-times">
-                        <span class="flight-depart">{{ flight.departure_time }}</span>
-                        <span class="flight-arrow">&rarr;</span>
-                        <span class="flight-arrive">{{ flight.arrival_time }}</span>
-                    </div>
-                    <div class="flight-meta-info">
-                        <span>{{ flight.duration }}</span>
-                        <span class="flight-stops">
-                            {% if flight.stops == 0 %}Nonstop{% elif flight.stops == 1 %}1 stop{% else %}{{ flight.stops }} stops{% endif %}
-                        </span>
-                    </div>
-                </div>
-                <div class="flight-card-price">
-                    <span class="flight-price">${{ flight.price|floatformat:0 }}</span>
-                    {% if flight.booking_url %}
-                        <a href="{{ flight.booking_url }}" target="_blank" rel="noopener" class="flight-book-link">Book</a>
-                    {% endif %}
-                </div>
-            </article>
-        {% endfor %}
-    </div>
-</section>
-{% else %}
-<section>
-    <div class="empty-state">
-        <p>No flights found for this route and date. Try adjusting your search.</p>
-    </div>
-</section>
-{% endif %}
+  </div>
 
-{% if not user.is_authenticated and flights %}
-    <p class="auth-cta">
-        <a href="{% url 'users:register' %}">Create an account</a> to save searches and track price changes.
-    </p>
-{% endif %}
+  <!-- Sticky new search footer -->
+  <div class="ctr-footer">
+    <div class="ctr-footer-inner">
+      <a href="{% url 'core:home' %}" class="ctr-footer-link">← Home</a>
+      <form method="post" action="{% url 'flights:search' %}" class="ctr-new-search-form" id="ctr-new-form" novalidate>
+        {% csrf_token %}
+        <span class="ctr-new-prefix" aria-hidden="true">›</span>
+        <label for="ctr-new-input" class="sr-only">New flight search</label>
+        <input
+          type="text"
+          id="ctr-new-input"
+          name="query"
+          placeholder="Ask another question or search a new route…"
+          autocomplete="off"
+          class="ctr-new-input"
+        >
+        <button type="submit" class="ctr-new-send" aria-label="Search">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- Loading overlay -->
+<div class="ct-loading" id="ct-loading" role="status" aria-live="polite" aria-label="Searching for flights">
+  <div class="ct-loading-box">
+    <div class="ct-loading-radar">
+      <div class="ct-radar-ring"></div>
+      <div class="ct-radar-ring"></div>
+      <div class="ct-radar-ring"></div>
+      <div class="ct-radar-center"></div>
+    </div>
+    <p class="ct-loading-title">Scanning routes</p>
+    <p class="ct-loading-sub">Agent is searching&hellip;</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+<script>
+(function () {
+  // Configure marked for safe, clean output
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+  });
+
+  // Render all markdown containers
+  document.querySelectorAll('.ctr-md[data-md]').forEach(function (el) {
+    var raw = el.getAttribute('data-md');
+    if (raw) {
+      // Normalize <br> tags the LLM emits to newlines so marked handles them cleanly
+      var normalized = raw.replace(/<br\s*\/?>/gi, '\n');
+      // Ensure a blank line before the start of a numbered list
+      normalized = normalized.replace(/([^\n])\n(\d+\.\s)/g, '$1\n\n$2');
+      el.innerHTML = marked.parse(normalized);
+    }
+  });
+
+  // Loading overlay
+  var form    = document.getElementById('ctr-new-form');
+  var input   = document.getElementById('ctr-new-input');
+  var loading = document.getElementById('ct-loading');
+
+  if (form && loading) {
+    form.addEventListener('submit', function () {
+      if (input && input.value.trim()) {
+        setTimeout(function () {
+          loading.classList.add('active');
+        }, 3000);
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}
