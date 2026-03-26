@@ -265,6 +265,75 @@
   .ct-agent-content p { margin: 0 0 0.85em; }
   .ct-agent-content p:last-child { margin-bottom: 0; }
   .ct-agent-content strong { color: #e8d9b8; font-weight: 600; }
+  .ct-agent-content em { color: rgba(212, 201, 176, 0.8); font-style: italic; }
+
+  .ct-agent-content h1,
+  .ct-agent-content h2,
+  .ct-agent-content h3 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 600;
+    color: #e8d9b8;
+    margin: 1em 0 0.4em;
+    line-height: 1.3;
+  }
+  .ct-agent-content h1 { font-size: 1.2rem; }
+  .ct-agent-content h2 { font-size: 1.05rem; }
+  .ct-agent-content h3 { font-size: 0.95rem; }
+
+  .ct-agent-content ul,
+  .ct-agent-content ol {
+    margin: 0 0 0.85em 1.1em;
+    padding: 0;
+  }
+  .ct-agent-content li { margin-bottom: 0.25em; }
+  .ct-agent-content li::marker { color: var(--ct-amber); opacity: 0.7; }
+
+  .ct-agent-content hr {
+    border: none;
+    border-top: 1px solid var(--ct-border);
+    margin: 1em 0;
+  }
+
+  .ct-agent-content code {
+    font-family: var(--ct-mono);
+    font-size: 0.82em;
+    background: rgba(230, 165, 30, 0.08);
+    color: var(--ct-amber);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+    border: 1px solid var(--ct-border);
+  }
+
+  .ct-agent-content pre {
+    background: var(--ct-surface-2);
+    border: 1px solid var(--ct-border);
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    margin: 0 0 0.85em;
+  }
+  .ct-agent-content pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.8rem;
+    color: var(--ct-text);
+  }
+
+  .ct-agent-content blockquote {
+    margin: 0 0 0.85em;
+    padding: 0.5em 1em;
+    border-left: 2px solid var(--ct-amber);
+    background: var(--ct-amber-dim);
+    color: rgba(212, 201, 176, 0.75);
+    font-style: italic;
+  }
+
+  .ct-agent-content a {
+    color: var(--ct-amber);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 
   /* Typing indicator */
   .ct-typing {
@@ -504,7 +573,7 @@
               {% if msg.is_tool_call %}
                 <em style="color:var(--ct-text-dim)">Scanning routes…</em>
               {% else %}
-                {{ msg.text|linebreaks }}
+                <div class="ct-md" data-md="{{ msg.text }}"></div>
               {% endif %}
             </div>
           </div>
@@ -554,8 +623,16 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
 <script>
 (function () {
+  // Render static markdown elements from server-rendered history
+  marked.use({ breaks: true, gfm: true });
+  document.querySelectorAll('.ct-md[data-md]').forEach(function (el) {
+    var raw = el.getAttribute('data-md');
+    if (raw) { el.innerHTML = marked.parse(raw); }
+  });
+
   var input   = document.getElementById('ct-input');
   var sendBtn = document.getElementById('ct-send');
   var body    = document.getElementById('ct-body');
@@ -620,25 +697,23 @@
     if (el) el.remove();
   }
 
-  // Convert plain text with newlines to simple HTML paragraphs
-  function textToHtml(text) {
-    return text.split(/\n\n+/).map(function (para) {
-      return '<p>' + esc(para.replace(/\n/g, '<br>')) + '</p>';
-    }).join('');
-  }
-
-  // Append agent bubble
+  // Append agent bubble with markdown rendering
   function appendAgent(text) {
     var div = document.createElement('div');
     div.className = 'ct-agent-msg';
-    div.innerHTML =
+    var avatar =
       '<div class="ct-agent-avatar" aria-hidden="true">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>' +
-      '</div>' +
-      '<div class="ct-agent-bubble">' +
-        '<span class="ct-agent-label">TripHelix Agent</span>' +
-        '<div class="ct-agent-content">' + textToHtml(text) + '</div>' +
       '</div>';
+    var bubble = document.createElement('div');
+    bubble.className = 'ct-agent-bubble';
+    bubble.innerHTML = '<span class="ct-agent-label">TripHelix Agent</span>';
+    var content = document.createElement('div');
+    content.className = 'ct-agent-content';
+    content.innerHTML = marked.parse(text);
+    bubble.appendChild(content);
+    div.innerHTML = avatar;
+    div.appendChild(bubble);
     thread.appendChild(div);
     scrollBottom();
   }

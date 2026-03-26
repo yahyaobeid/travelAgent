@@ -555,7 +555,7 @@
         <div class="ctr-user-msg">
           <div class="ctr-user-bubble">
             <span class="ctr-user-label">You</span>
-            <span class="ctr-user-text">{{ msg.text }}</span>
+            <span class="ctr-user-text">{{ msg.text | safe }}</span>
           </div>
         </div>
         {% else %}
@@ -565,7 +565,7 @@
           </div>
           <div class="ctr-agent-bubble">
             <span class="ctr-agent-label">TripHelix Agent</span>
-            <div class="ctr-agent-content ctr-md" data-md="{{ msg.text|escapejs }}"></div>
+            <div class="ctr-agent-content ctr-md" data-md="{{ msg.text }}"></div>
           </div>
         </div>
         {% endif %}
@@ -662,21 +662,13 @@
 <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
 <script>
 (function () {
-  // Configure marked for safe, clean output
-  marked.setOptions({
-    breaks: true,
-    gfm: true,
-  });
+  marked.use({ breaks: true, gfm: true });
 
   // Render all markdown containers
   document.querySelectorAll('.ctr-md[data-md]').forEach(function (el) {
     var raw = el.getAttribute('data-md');
     if (raw) {
-      // Normalize <br> tags the LLM emits to newlines so marked handles them cleanly
-      var normalized = raw.replace(/<br\s*\/?>/gi, '\n');
-      // Ensure a blank line before the start of a numbered list
-      normalized = normalized.replace(/([^\n])\n(\d+\.\s)/g, '$1\n\n$2');
-      el.innerHTML = marked.parse(normalized);
+      el.innerHTML = marked.parse(raw);
     }
   });
 
