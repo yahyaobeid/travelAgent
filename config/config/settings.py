@@ -27,12 +27,25 @@ ALLOWED_HOSTS = [
     "www.triphelix.com",
     "localhost",
     "127.0.0.1",
+    "0.0.0.0",
+    ".replit.dev",
+    ".replit.app",
+    ".repl.co",
 ]
+
+_REPLIT_DOMAIN = os.getenv("REPLIT_DEV_DOMAIN", "")
+if _REPLIT_DOMAIN:
+    ALLOWED_HOSTS.append(_REPLIT_DOMAIN)
 
 CSRF_TRUSTED_ORIGINS = [
     "https://triphelix.com",
     "https://www.triphelix.com",
+    "https://*.replit.dev",
+    "https://*.replit.app",
+    "https://*.repl.co",
 ]
+if _REPLIT_DOMAIN:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{_REPLIT_DOMAIN}")
 
 # Application definition
 
@@ -91,11 +104,11 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "triphelix"),
-        "USER": os.getenv("POSTGRES_USER", "default"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "password"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "NAME": os.getenv("POSTGRES_DB", os.getenv("PGDATABASE", "triphelix")),
+        "USER": os.getenv("POSTGRES_USER", os.getenv("PGUSER", "default")),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", os.getenv("PGPASSWORD", "password")),
+        "HOST": os.getenv("POSTGRES_HOST", os.getenv("PGHOST", "localhost")),
+        "PORT": os.getenv("POSTGRES_PORT", os.getenv("PGPORT", "5432")),
     }
 }
 
@@ -155,11 +168,16 @@ LOGIN_REDIRECT_URL = "core:home"
 LOGOUT_REDIRECT_URL = "users:login"
 LOGIN_URL = "users:login"
 
-# CORS — allow Vite dev server in development
+# CORS — allow Vite dev server and Replit proxy in development
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:5000",
+    "http://0.0.0.0:5000",
 ]
+if _REPLIT_DOMAIN:
+    CORS_ALLOWED_ORIGINS.append(f"https://{_REPLIT_DOMAIN}")
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF — allow the React SPA to read the token from the cookie
