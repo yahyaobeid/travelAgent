@@ -2138,3 +2138,404 @@ pre, code {
   .hero-aside { display: none; }
   .ct-shell { margin: -1.5rem -1rem -3rem; }
 }
+
+/* =====================================================
+   ITINERARY FORM WIZARD
+   ===================================================== */
+
+.form-wizard {
+  width: 100%;
+  max-width: 660px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.form-wizard-header {
+  text-align: center;
+  padding-top: 1rem;
+}
+
+.form-wizard-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 700;
+  font-style: italic;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+  line-height: 1.1;
+}
+
+.form-wizard-sub {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Step indicator */
+.wiz-steps {
+  position: relative;
+  display: flex;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+}
+
+.wiz-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1rem 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+  z-index: 1;
+}
+
+.wiz-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 25%;
+  height: 50%;
+  width: 1px;
+  background: var(--border);
+}
+
+.wiz-step:hover:not(.wiz-step--active) { background: rgba(255,255,255,0.03); }
+
+.wiz-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.wiz-step--active .wiz-step-num {
+  border-color: var(--amber);
+  background: var(--amber);
+  color: var(--text-on-amber);
+}
+
+.wiz-step--done .wiz-step-num {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: rgba(212,148,58,0.12);
+}
+
+.wiz-step-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.wiz-step--active .wiz-step-label { color: var(--text); }
+.wiz-step--done .wiz-step-label { color: var(--amber); }
+
+/* Progress track (hidden visually, step highlights handle progress) */
+.wiz-track { display: none; }
+
+/* Panel */
+.wiz-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 2rem 2.5rem;
+}
+
+.wiz-panel-lead {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+/* Section labels for edit mode */
+.wiz-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.wiz-section:last-of-type { border-bottom: none; }
+
+.wiz-section-label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wiz-optional {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+
+/* Duration badge inline with label */
+.duration-badge {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(212,148,58,0.12);
+  border: 1px solid var(--border-strong);
+  color: var(--amber);
+  margin-left: 0.5rem;
+}
+
+/* Style cards */
+.style-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.style-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1.25rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-raised);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.style-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.style-card:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-float);
+}
+
+.style-card--selected {
+  border-color: var(--amber);
+  background: rgba(212,148,58,0.06);
+  box-shadow: 0 0 0 1px var(--amber), inset 0 0 0 1px rgba(212,148,58,0.08);
+}
+
+.style-card-icon {
+  font-size: 1.4rem;
+  color: var(--amber);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+.style-card--selected .style-card-icon { opacity: 1; }
+
+.style-card-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.style-card-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+/* Trip summary pill */
+.trip-summary-pill {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(212,148,58,0.06);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  font-size: 0.85rem;
+}
+
+.trip-summary-dest {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.trip-summary-sep { color: var(--text-dim); }
+
+.trip-summary-dur {
+  color: var(--amber);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.trip-summary-style {
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+/* Preferences toggle */
+.prefs-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: var(--surface-raised);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.prefs-toggle:hover {
+  background: var(--surface-float);
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+
+.prefs-toggle--open {
+  border-style: solid;
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.prefs-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(212,148,58,0.12);
+  color: var(--amber);
+  font-size: 1.1rem;
+  font-weight: 300;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.prefs-toggle-sub {
+  font-size: 0.75rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.prefs-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 0.5rem 0;
+}
+
+/* Footer / CTA area */
+.wiz-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wiz-footer--generate {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.wiz-footer--generate form { margin: 0; padding: 0; gap: 0; }
+
+.wiz-guest-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+  font-weight: 300;
+}
+
+.wiz-guest-note a { color: var(--amber); }
+
+/* Large button variant */
+.btn-lg {
+  padding: 0.85rem 1.75rem;
+  font-size: 0.85rem;
+}
+
+/* Generate button special */
+.btn-generate {
+  width: 100%;
+  justify-content: center;
+  padding: 1rem 2rem;
+  font-size: 0.88rem;
+  letter-spacing: 0.12em;
+}
+
+.btn-generate-icon {
+  font-size: 0.95rem;
+  margin-right: 0.25rem;
+  color: var(--text-on-amber);
+}
+
+.btn-arrow {
+  margin-left: 0.25rem;
+  font-size: 1rem;
+  font-weight: 300;
+}
+
+/* Responsive wizard */
+@media (max-width: 600px) {
+  .wiz-panel { padding: 1.5rem 1.25rem; }
+  .style-cards { grid-template-columns: 1fr; }
+  .wiz-step-label { display: none; }
+  .wiz-step { padding: 0.75rem; }
+  .trip-summary-dest { max-width: 140px; }
+  .prefs-toggle-sub { display: none; }
+}
