@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { listItineraries } from '../api/itineraries'
 import ItineraryCard from '../components/ItineraryCard'
 import type { Itinerary } from '../types'

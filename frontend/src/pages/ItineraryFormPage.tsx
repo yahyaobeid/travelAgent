@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { createItinerary, getItinerary, updateItinerary } from '../api/itineraries'
 import LoadingOverlay from '../components/LoadingOverlay'
 import { STYLE_CHOICES, type TravelStyle } from '../types'

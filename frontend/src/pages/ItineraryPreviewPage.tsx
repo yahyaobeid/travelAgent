@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { getPreview, savePending } from '../api/itineraries'
 import MarkdownRenderer from '../components/MarkdownRenderer'
 import EventsSection from '../components/EventCard'
