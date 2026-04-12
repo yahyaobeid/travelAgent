@@ -55,14 +55,12 @@ export default function Navbar() {
           <ul>
             <li className="nav-item"><Link to="/flights" onClick={closeMenu}>Flights</Link></li>
             <li className="nav-item"><Link to="/cars" onClick={closeMenu}>Car Rentals</Link></li>
-            <li className="nav-item coming-soon-item">
-              <span className="coming-soon-label">Hotels</span>
-              <span className="coming-soon-tag">Soon</span>
-            </li>
+            <li className="nav-item"><Link to="/hotels" onClick={closeMenu}>Hotels</Link></li>
             <li className="nav-divider" aria-hidden="true" />
             {isAuthenticated ? (
               <>
                 <li className="nav-item"><Link to="/" onClick={closeMenu}>Dashboard</Link></li>
+                <li className="nav-item"><Link to="/trips" onClick={closeMenu}>My Trips</Link></li>
                 <li className="nav-item nav-item--cta"><Link to="/itineraries/new" onClick={closeMenu}>Plan a Trip</Link></li>
                 <li className="nav-item">
                   <button type="button" id="logout-button" onClick={handleLogout}>Sign out</button>

@@ -62,6 +62,8 @@ INSTALLED_APPS = [
     "itinerary",
     "flights",
     "cars",
+    "hotels",
+    "trips",
     "users",
 ]
 

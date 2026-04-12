@@ -19,3 +19,7 @@ export async function getMe(): Promise<User> {
   const { data } = await client.get<User>('/auth/me/')
   return data
 }
+
+export async function getCsrf(): Promise<void> {
+  await client.get('/csrf/')
+}

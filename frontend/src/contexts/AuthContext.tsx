@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { getMe, login as apiLogin, logout as apiLogout, register as apiRegister } from '../api/auth'
+import { getCsrf, getMe, login as apiLogin, logout as apiLogout, register as apiRegister } from '../api/auth'
 import type { User } from '../types'
 
 interface AuthContextType {
@@ -18,7 +18,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    getMe()
+    getCsrf()
+      .then(() => getMe())
       .then(setUser)
       .catch(() => setUser(null))
       .finally(() => setIsLoading(false))

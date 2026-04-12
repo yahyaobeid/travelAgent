@@ -12,6 +12,8 @@ from .models import Itinerary
 from .serializers import ItineraryCreateSerializer, ItinerarySerializer, ItineraryUpdateSerializer
 from .services import ItineraryGenerationError, ItineraryRequest, generate_itinerary
 
+from trips.models import Trip
+
 LOGGER = logging.getLogger(__name__)
 PENDING_SESSION_KEY = "pending_itinerary"
 
@@ -69,7 +71,14 @@ def itinerary_create(request):
             prompt=prompt,
             generated_plan=plan,
         )
-        LOGGER.info("Created itinerary %s for %s", itinerary.pk, request.user)
+
+        # Auto-create a Trip linked to this itinerary
+        trip = Trip.objects.create(
+            user=request.user,
+            title=data["destination"],
+            itinerary=itinerary,
+        )
+        LOGGER.info("Created itinerary %s and trip %s for %s", itinerary.pk, trip.pk, request.user)
         return Response(ItinerarySerializer(itinerary).data, status=status.HTTP_201_CREATED)
 
     # Anonymous preview — store in session
@@ -146,8 +155,15 @@ def itinerary_save_pending(request):
         prompt=pending["prompt"],
         generated_plan=pending["generated_plan"],
     )
+
+    # Auto-create a Trip linked to this itinerary
+    trip = Trip.objects.create(
+        user=request.user,
+        title=pending["destination"],
+        itinerary=itinerary,
+    )
     request.session.pop(PENDING_SESSION_KEY, None)
-    LOGGER.info("Saved pending itinerary %s for %s", itinerary.pk, request.user)
+    LOGGER.info("Saved pending itinerary %s and trip %s for %s", itinerary.pk, trip.pk, request.user)
     return Response(ItinerarySerializer(itinerary).data, status=status.HTTP_201_CREATED)
 
 

@@ -88,3 +88,45 @@ export const STYLE_CHOICES: Record<TravelStyle, string> = {
   city_shopping: 'City Life & Shopping',
   adventure: 'Adventure & Outdoors',
 }
+
+export interface HotelListing {
+  name: string
+  star_rating: number
+  price_display: string
+  hotel_type: string
+  location: string
+  amenities: string | string[]
+  checkin_time?: string
+  checkout_time?: string
+  listing_url?: string
+}
+
+export interface HotelSearchResult {
+  results: HotelListing[]
+  count: number
+}
+
+export interface FlightSearch {
+  id: number
+  natural_query: string
+}
+
+export interface HotelSearch {
+  id: number
+  natural_query: string
+  location: string
+}
+
+export interface CarRentalSearch {
+  id: number
+}
+
+export interface Trip {
+  id: number
+  title: string
+  created_at: string
+  itinerary: Itinerary
+  flight_search: FlightSearch | null
+  hotel_search: HotelSearch | null
+  car_rental_search: CarRentalSearch | null
+}

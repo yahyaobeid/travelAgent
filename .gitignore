@@ -208,3 +208,4 @@ __marimo__/
 
 *.pem
 config/api.log
+.devfleet-worktrees/

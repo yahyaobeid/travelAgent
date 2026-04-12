@@ -14,6 +14,10 @@ import SavePendingRedirectPage from './pages/SavePendingRedirectPage'
 import FlightSearchPage from './pages/FlightSearchPage'
 import CarSearchPage from './pages/CarSearchPage'
 import CarResultsPage from './pages/CarResultsPage'
+import HotelSearchPage from './pages/HotelSearchPage'
+import HotelResultsPage from './pages/HotelResultsPage'
+import MyTripsPage from './pages/MyTripsPage'
+import TripDashboardPage from './pages/TripDashboardPage'
 
 function NotFound() {
   return (
@@ -38,6 +42,8 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/flights" element={<FlightSearchPage />} />
             <Route path="/cars" element={<CarSearchPage />} />
+            <Route path="/hotels" element={<HotelSearchPage />} />
+            <Route path="/hotels/results" element={<HotelResultsPage />} />
 
             <Route path="/itineraries/new" element={<ItineraryFormPage />} />
             <Route path="/itineraries/preview" element={<ItineraryPreviewPage />} />
@@ -81,6 +87,24 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <CarResultsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/trips"
+              element={
+                <ProtectedRoute>
+                  <MyTripsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/trips/:id"
+              element={
+                <ProtectedRoute>
+                  <TripDashboardPage />
                 </ProtectedRoute>
               }
             />

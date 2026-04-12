@@ -9,19 +9,19 @@ type Mode = 'create' | 'edit'
 
 const STYLE_META: Record<TravelStyle, { icon: string; description: string }> = {
   general: {
-    icon: '◎',
+    icon: '🌍',
     description: 'A balanced mix of everything — sightseeing, food, culture, and downtime.',
   },
   culture_history: {
-    icon: '⛩',
+    icon: '🏛️',
     description: 'Museums, landmarks, local traditions, and historical sites.',
   },
   city_shopping: {
-    icon: '◈',
+    icon: '🛍️',
     description: 'Urban exploration, markets, boutiques, and the best neighbourhoods.',
   },
   adventure: {
-    icon: '▲',
+    icon: '🏔️',
     description: 'Hikes, outdoor activities, and experiences off the beaten path.',
   },
 }
@@ -348,7 +348,13 @@ export default function ItineraryFormPage() {
                 key={s}
                 type="button"
                 className={`wiz-step${step === s ? ' wiz-step--active' : ''}${step > s ? ' wiz-step--done' : ''}`}
-                onClick={() => { if (s < step || (s === 2 && validateStep1()) || s === step) setStep(s) }}
+                onClick={() => {
+                  if (s < step) { setStep(s); return }
+                  if (s === step) return
+                  // Forward navigation: validate each step before advancing
+                  if (s > step && step === 1 && !validateStep1()) return
+                  setStep(s)
+                }}
                 aria-current={step === s ? 'step' : undefined}
               >
                 <span className="wiz-step-num">{step > s ? '✓' : s}</span>

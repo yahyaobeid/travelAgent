@@ -2,12 +2,22 @@ import logging
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
+from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_GET
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 LOGGER = logging.getLogger(__name__)
+
+
+@require_GET
+@ensure_csrf_cookie
+def csrf_token_view(request):
+    """Set the csrftoken cookie so the React SPA can read it before any POST."""
+    return JsonResponse({})
 
 
 def _user_data(user) -> dict:

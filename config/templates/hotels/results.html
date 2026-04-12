@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Hotel Results · TripHelix{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div>
+        {% if search %}
+            <h2>Hotels in {{ search.location }}</h2>
+            <p class="trip-dates">
+                {% if search.check_in_date %}{{ search.check_in_date|date:"M d, Y" }}{% endif %}
+                {% if search.check_out_date %} &mdash; {{ search.check_out_date|date:"M d, Y" }}{% endif %}
+            </p>
+            <p>
+                {% if search.guests %}<strong>{{ search.guests }} guest{{ search.guests|pluralize }}</strong> &middot; {% endif %}
+                {% if search.star_rating %}{{ search.star_rating }}&#9733; &middot; {% endif %}
+                {% if search.max_price_per_night %}Budget: ${{ search.max_price_per_night|floatformat:0 }}/night{% endif %}
+            </p>
+        {% elif params %}
+            <h2>Hotels in {{ params.location }}</h2>
+            <p class="trip-dates">
+                {% if params.check_in_date %}{{ params.check_in_date }}{% endif %}
+                {% if params.check_out_date %} &mdash; {{ params.check_out_date }}{% endif %}
+            </p>
+            <p>
+                {% if params.guests %}<strong>{{ params.guests }} guest{{ params.guests|pluralize }}</strong> &middot; {% endif %}
+                {% if params.star_rating %}{{ params.star_rating }}&#9733; &middot; {% endif %}
+                {% if params.max_price_per_night %}Budget: ${{ params.max_price_per_night|floatformat:0 }}/night{% endif %}
+            </p>
+        {% endif %}
+    </div>
+    <div>
+        <p><strong>Actions</strong></p>
+        <ul>
+            <li><a href="{% url 'hotels:search' %}">Search again</a></li>
+            <li><a href="{% url 'core:home' %}">Back to dashboard</a></li>
+        </ul>
+    </div>
+</section>
+
+{% if results or listings %}
+<section>
+    <h3 class="section-title">Hotel options</h3>
+    <div class="flight-results-list">
+        {% for hotel in results %}
+            <article class="flight-card">
+                <div class="flight-card-main">
+                    <div class="flight-airline">
+                        <strong>{{ hotel.hotel_name }}</strong>
+                        {% if hotel.star_rating %}
+                            <span class="flight-number">
+                                {% for i in "12345" %}{% if forloop.counter <= hotel.star_rating %}&#9733;{% endif %}{% endfor %}
+                            </span>
+                        {% endif %}
+                        {% if hotel.hotel_type %}
+                            <span class="flight-number">{{ hotel.hotel_type }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flight-times">
+                        <span>{{ hotel.location }}</span>
+                    </div>
+                    <div class="flight-meta-info">
+                        {% if hotel.amenities %}
+                            <span>{{ hotel.amenities }}</span>
+                        {% endif %}
+                        {% if hotel.check_in %}
+                            <span class="flight-stops">Check-in: {{ hotel.check_in }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flight-card-price">
+                    <span class="flight-price">{{ hotel.price_display }}</span>
+                    {% if hotel.listing_url %}
+                        <a href="{{ hotel.listing_url }}" target="_blank" rel="noopener" class="flight-book-link">View Deal</a>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+        {% for hotel in listings %}
+            <article class="flight-card">
+                <div class="flight-card-main">
+                    <div class="flight-airline">
+                        <strong>{{ hotel.hotel_name }}</strong>
+                        {% if hotel.star_rating %}
+                            <span class="flight-number">{{ hotel.star_rating }}&#9733;</span>
+                        {% endif %}
+                        {% if hotel.hotel_type %}
+                            <span class="flight-number">{{ hotel.hotel_type }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flight-times">
+                        <span>{{ hotel.location }}</span>
+                    </div>
+                    <div class="flight-meta-info">
+                        {% if hotel.amenities %}
+                            <span>{{ hotel.amenities }}</span>
+                        {% endif %}
+                        {% if hotel.check_in %}
+                            <span class="flight-stops">Check-in: {{ hotel.check_in }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flight-card-price">
+                    <span class="flight-price">{{ hotel.price_display }}</span>
+                    {% if hotel.listing_url %}
+                        <a href="{{ hotel.listing_url }}" target="_blank" rel="noopener" class="flight-book-link">View Deal</a>
+                    {% endif %}
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% else %}
+<section>
+    <div class="empty-state">
+        <p>No hotels found for this search. Try adjusting your location, dates, or budget.</p>
+    </div>
+</section>
+{% endif %}
+
+{% if not user.is_authenticated and listings %}
+    <p class="auth-cta">
+        <a href="{% url 'users:register' %}">Create an account</a> to save searches and view them later.
+    </p>
+{% endif %}
+{% endblock %}

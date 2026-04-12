@@ -1,11 +1,15 @@
-from django.urls import path
+from django.urls import path, include
 
 from . import auth_views
 from itinerary import api_views as itinerary_api
 from flights import api_views as flights_api
 from cars import api_views as cars_api
+from hotels import api_views as hotels_api
 
 urlpatterns = [
+    # CSRF cookie endpoint — must be called before the first authenticated POST
+    path("csrf/", auth_views.csrf_token_view, name="api_csrf"),
+
     # Auth
     path("auth/login/", auth_views.login_view, name="api_login"),
     path("auth/register/", auth_views.register_view, name="api_register"),
@@ -26,4 +30,11 @@ urlpatterns = [
     # Cars
     path("cars/search/", cars_api.car_search, name="api_car_search"),
     path("cars/<int:pk>/", cars_api.car_detail, name="api_car_detail"),
+
+    # Hotels
+    path("hotels/search/", hotels_api.hotel_search, name="api_hotel_search"),
+    path("hotels/<int:pk>/", hotels_api.hotel_detail, name="api_hotel_detail"),
+
+    # Trips
+    path("", include("trips.urls")),
 ]

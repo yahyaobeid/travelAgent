@@ -37,5 +37,6 @@ urlpatterns = [
     path("itineraries/", include("itinerary.urls")),
     path("flights/", include("flights.urls")),
     path("cars/", include("cars.urls")),
+    path("hotels/", include("hotels.urls")),
     path("users/", include("users.urls")),
 ]
